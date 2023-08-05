@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Azure AI Search Playground</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="~/js/colormode.js" asp-append-version="true"></script>
+</head>
+
+<body>
+    <div id="app">
+        <nav class="navbar navbar-expand-lg sticky-top border-bottom bg-body-tertiary">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-page="/Index">Azure AI Search Playground</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse">
+                    <div class="navbar-nav flex-grow-1">
+                        <a class="nav-link @(this.ViewContext.View.Path.StartsWith("/Pages/Index", StringComparison.OrdinalIgnoreCase) ? "active": "")" asp-page="/Index">Home</a>
+                    </div>
+                    <div class="navbar-nav">
+                        <div class="nav-item dropdown">
+                            <button class="nav-link dropdown-toggle" role="button" id="bs-theme" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-circle-half" id="bs-theme-icon-active"></i>
+                                <span class="d-lg-none ms-2" id="bs-theme-text">Toggle theme</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><button type="button" class="nav-link ms-2" data-bs-theme-value="light"><i class="bi bi-sun-fill"></i> Light</button></li>
+                                <li><button type="button" class="nav-link ms-2" data-bs-theme-value="dark"><i class="bi bi-moon-stars-fill"></i> Dark</button></li>
+                                <li><button type="button" class="nav-link ms-2" data-bs-theme-value="auto"><i class="bi bi-circle-half"></i> Auto</button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="container">
+            <main role="main" class="pb-3">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>
