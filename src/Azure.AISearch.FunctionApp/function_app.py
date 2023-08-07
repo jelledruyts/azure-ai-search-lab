@@ -47,9 +47,14 @@ def text_chunking(req: func.HttpRequest) -> func.HttpResponse:
         text = value['data']['text']
         filepath = value['data']['filepath']
         fieldname = value['data']['fieldname']
+        logging.info(f'Processing record "{recordId}":')
+        logging.info(f'- document_id: "{document_id}"')
+        logging.info(f'- filepath: "{filepath}"')
     
         # chunk documents into chunks of (by default) 2048 tokens, and for each chunk, generate the vector embedding
+        logging.info(f'Chunking to {num_tokens} tokens (min chunk size is {min_chunk_size}, token overlap is {token_overlap}).')
         chunking_result = TEXT_CHUNKER.chunk_content(text, file_path=filepath, num_tokens=num_tokens, min_chunk_size=min_chunk_size, token_overlap=token_overlap)
+        logging.info(f'Generating embeddings for {len(chunking_result.chunks)} chunks.')
         content_chunk_metadata = CHUNK_METADATA_HELPER.generate_chunks_with_embedding(document_id, [c.content for c in chunking_result.chunks], fieldname, sleep_interval_seconds)
 
         for document_chunk, embedding_metadata in zip(chunking_result.chunks, content_chunk_metadata):

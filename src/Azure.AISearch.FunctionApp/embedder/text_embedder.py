@@ -17,7 +17,7 @@ class TextEmbedder():
         text = re.sub(r'[\n\r]+', ' ', text).strip()
         # Truncate text if necessary (e.g. for, ada-002, 4095 tokens ~ 7000 chracters)    
         if len(text) > text_limit:
-            logging.warning("Token limit reached exceeded maximum length, truncating...")
+            logging.warning(f"Token limit reached exceeded maximum length ({len(text)} > {text_limit}), truncating...")
             text = text[:text_limit]
         return text
 
