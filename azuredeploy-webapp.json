@@ -1,0 +1,326 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "prefix": {
+            "type": "String"
+        },
+        "embeddingModelName": {
+            "type": "String",
+            "minLength": 1,
+            "defaultValue": "text-embedding-ada-002"
+        },
+        "embeddingModelVersion": {
+            "type": "String",
+            "minLength": 1,
+            "defaultValue": "2"
+        },
+        "gptModelName": {
+            "type": "String",
+            "minLength": 1,
+            "defaultValue": "gpt-35-turbo"
+        },
+        "gptModelVersion": {
+            "type": "String",
+            "minLength": 1,
+            "defaultValue": "0613"
+        }
+    },
+    "variables": {
+        "logAnalyticsWorkspaceName": "[concat(parameters('prefix'), '-', uniquestring(resourceGroup().id), '-loganalytics')]",
+        "applicationInsightsName": "[concat(parameters('prefix'), '-', uniquestring(resourceGroup().id), '-appinsights')]",
+        "storageAccountName": "[concat(parameters('prefix'), uniquestring(resourceGroup().id), 'stg')]",
+        "openaiServiceName": "[concat(parameters('prefix'), '-', uniquestring(resourceGroup().id), '-openai')]",
+        "openaiApiVersion": "2023-05-15",
+        "functionPlanName": "[concat(parameters('prefix'), '-', uniquestring(resourceGroup().id), '-func-plan')]",
+        "functionAppName": "[concat(parameters('prefix'), '-', uniquestring(resourceGroup().id), '-func-app')]",
+        "webPlanName": "[concat(parameters('prefix'), '-', uniquestring(resourceGroup().id), '-web-plan')]",
+        "webAppName": "[concat(parameters('prefix'), '-', uniquestring(resourceGroup().id), '-web-app')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "apiVersion": "2021-06-01",
+            "name": "[variables('logAnalyticsWorkspaceName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "sku": {
+                    "name": "PerGB2018"
+                },
+                "retentionInDays": 120
+            }
+        },
+        {
+            "type": "Microsoft.Insights/components",
+            "apiVersion": "2020-02-02",
+            "name": "[variables('applicationInsightsName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "other",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            ],
+            "properties": {
+                "Application_Type": "web",
+                "Flow_Type": "Bluefield",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+            }
+        },
+        {
+            "apiVersion": "2022-09-01",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard_GRS"
+            },
+            "kind": "StorageV2"
+        },
+        {
+            "type": "Microsoft.CognitiveServices/accounts",
+            "apiVersion": "2021-10-01",
+            "name": "[variables('openaiServiceName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "OpenAI",
+            "sku": {
+                "name": "S0"
+            },
+            "properties": {
+                "customSubDomainName": "[variables('openaiServiceName')]"
+            }
+        },
+        {
+            "type": "Microsoft.CognitiveServices/accounts/deployments",
+            "apiVersion": "2023-05-01",
+            "name": "[concat(variables('openaiServiceName'), '/', parameters('embeddingModelName'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('openaiServiceName'))]"
+            ],
+            "sku": {
+                "name": "Standard",
+                "capacity": 1
+            },
+            "properties": {
+                "model": {
+                    "format": "OpenAI",
+                    "name": "[parameters('embeddingModelName')]",
+                    "version": "[parameters('embeddingModelVersion')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.CognitiveServices/accounts/deployments",
+            "apiVersion": "2023-05-01",
+            "name": "[concat(variables('openaiServiceName'), '/', parameters('gptModelName'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', variables('openaiServiceName'))]",
+                "[resourceId('Microsoft.CognitiveServices/accounts/deployments', variables('openaiServiceName'), parameters('embeddingModelName'))]"
+            ],
+            "sku": {
+                "name": "Standard",
+                "capacity": 1
+            },
+            "properties": {
+                "model": {
+                    "format": "OpenAI",
+                    "name": "[parameters('gptModelName')]",
+                    "version": "[parameters('gptModelVersion')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2022-09-01",
+            "type": "Microsoft.Web/serverfarms",
+            "name": "[variables('functionPlanName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "linux",
+            "sku": {
+                "Name": "EP1"
+            },
+            "properties": {
+                "reserved": true
+            }
+        },
+        {
+            "apiVersion": "2022-09-01",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('functionAppName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "functionapp",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
+            ],
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+                "siteConfig": {
+                    "linuxFxVersion": "DOCKER|ghcr.io/jelledruyts/azure-aisearch-functionapp:latest",
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~4"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "python"
+                        },
+                        {
+                            "name": "AzureWebJobsFeatureFlags",
+                            "value": "EnableWorkerIndexing"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                            "value": "false"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName')), '2020-02-02').InstrumentationKey]"
+                        },
+                        {
+                            "name": "AZURE_OPENAI_API_KEY",
+                            "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', variables('openaiServiceName')), '2021-10-01').key1]"
+                        },
+                        {
+                            "name": "AZURE_OPENAI_API_VERSION",
+                            "value": "[variables('openaiApiVersion')]"
+                        },
+                        {
+                            "name": "AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
+                            "value": "[parameters('embeddingModelName')]"
+                        },
+                        {
+                            "name": "AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS",
+                            "value": "1"
+                        },
+                        {
+                            "name": "AZURE_OPENAI_SERVICE_NAME",
+                            "value": "[variables('openaiServiceName')]"
+                        },
+                        {
+                            "name": "MIN_CHUNK_SIZE",
+                            "value": "10"
+                        },
+                        {
+                            "name": "NUM_TOKENS",
+                            "value": "1024"
+                        },
+                        {
+                            "name": "TOKEN_OVERLAP",
+                            "value": "0"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "apiVersion": "2022-09-01",
+            "type": "Microsoft.Web/serverfarms",
+            "name": "[variables('webPlanName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "linux",
+            "sku": {
+                "Name": "B1"
+            },
+            "properties": {
+                "reserved": true
+            }
+        },
+        {
+            "apiVersion": "2022-09-01",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('webAppName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('webPlanName'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
+            ],
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('webPlanName'))]",
+                "clientAffinityEnabled": false,
+                "httpsOnly": true,
+                "siteConfig": {
+                    "linuxFxVersion": "DOCKER|ghcr.io/jelledruyts/azure-aisearch-webapp",
+                    "alwaysOn": true,
+                    "appSettings": [
+                        {
+                            "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                            "value": "false"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName')), '2020-02-02').InstrumentationKey]"
+                        },
+                        {
+                            "name": "OpenAIEndpoint",
+                            "value": "[concat('https://', variables('openaiServiceName'), '.openai.azure.com')]"
+                        },
+                        {
+                            "name": "OpenAIApiKey",
+                            "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', variables('openaiServiceName')), '2021-10-01').key1]"
+                        },
+                        {
+                            "name": "OpenAIApiVersion",
+                            "value": "[variables('openaiApiVersion')]"
+                        },
+                        {
+                            "name": "OpenAIEmbeddingDeployment",
+                            "value": "[parameters('embeddingModelName')]"
+                        },
+                        {
+                            "name": "OpenAIGptDeployment",
+                            "value": "[parameters('gptModelName')]"
+                        },
+                        {
+                            "name": "StorageAccountConnectionString",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+                        },
+                        {
+                            "name": "TextEmbedderFunctionEndpoint",
+                            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2022-09-01').defaultHostName, '/api/chunk-embed?code=', listkeys(concat(resourceId('Microsoft.Web/sites', variables('functionAppName')), '/host/default/'), '2022-09-01').functionKeys.default)]"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "OpenAIEndpoint": {
+            "type": "string",
+            "value": "[concat('https://', variables('openaiServiceName'), '.openai.azure.com')]"
+        },
+        "OpenAIApiKey": {
+            "type": "string",
+            "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', variables('openaiServiceName')), '2021-10-01').key1]"
+        },
+        "OpenAIApiVersion": {
+            "type": "string",
+            "value": "[variables('openaiApiVersion')]"
+        },
+        "OpenAIEmbeddingDeployment": {
+            "type": "string",
+            "value": "[parameters('embeddingModelName')]"
+        },
+        "OpenAIGptDeployment": {
+            "type": "string",
+            "value": "[parameters('gptModelName')]"
+        },
+        "StorageAccountConnectionString": {
+            "type": "string",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+        },
+        "TextEmbedderFunctionEndpoint": {
+            "type": "string",
+            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2022-09-01').defaultHostName, '/api/chunk-embed?code=', listkeys(concat(resourceId('Microsoft.Web/sites', variables('functionAppName')), '/host/default/'), '2022-09-01').functionKeys.default)]"
+        }
+    }
+}

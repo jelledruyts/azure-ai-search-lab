@@ -1,0 +1,29 @@
+name: Publish Web App container image to GitHub
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+    paths:
+    - 'src/Azure.AISearch.WebApp/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build Docker Image
+      run: docker build --no-cache --build-arg app_version=1.0.$GITHUB_RUN_NUMBER --build-arg source_version=$GITHUB_SHA -t jelledruyts/azure-aisearch-webapp:latest -f ./src/Azure.AISearch.WebApp/Dockerfile ./src/Azure.AISearch.WebApp
+    - name: Push Docker Image to GitHub
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        docker tag jelledruyts/azure-aisearch-webapp:latest ghcr.io/jelledruyts/azure-aisearch-webapp:latest
+        docker push ghcr.io/jelledruyts/azure-aisearch-webapp:latest

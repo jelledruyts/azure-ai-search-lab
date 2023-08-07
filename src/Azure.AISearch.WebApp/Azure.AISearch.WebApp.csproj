@@ -4,6 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-Azure.AISearch.WebApp-7b22bd67-30f4-40a6-ada8-882b828f0636</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
