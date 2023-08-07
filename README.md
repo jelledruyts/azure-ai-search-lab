@@ -15,7 +15,3 @@ North Central US: gpt-35-turbo (0613), gpt-35-turbo-16k (0613), text-embedding-a
 
 South Central US: gpt-35-turbo (0301), text-embedding-ada-002 (version 2)
 West Europe: gpt-35-turbo (0301), text-embedding-ada-002 (version 2)
-
-Note: if deployment fails with an error "Encountered an error (InternalServerError) from host runtime",
-this means the keys of the Function App could not yet be retrieved as it is still being configured and deployed.
-Simply redeploying the same template should work, as by then everything should have been finalized.

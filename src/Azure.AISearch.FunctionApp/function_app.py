@@ -6,7 +6,7 @@ import jsonschema
 from chunker.text_chunker import TextChunker
 from chunker.chunk_metadata_helper import ChunkEmbeddingHelper
 
-app = func.FunctionApp()
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 TEXT_CHUNKER = TextChunker()
 CHUNK_METADATA_HELPER = ChunkEmbeddingHelper()
@@ -20,6 +20,10 @@ Required environment variables:
 
 Optional environment variables:
 "AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS" (default: 1)
+"MIN_CHUNK_SIZE" (default: 10)
+"NUM_TOKENS" (default: 2048)
+"TOKEN_OVERLAP" (default: 0)
+"API_KEY" (default: no API key required)
 """
 
 @app.function_name(name="TextEmbedder")
@@ -27,7 +31,12 @@ Optional environment variables:
 def text_chunking(req: func.HttpRequest) -> func.HttpResponse:
 
     logging.info('Python HTTP trigger function processed a request.')
-    
+
+    # Use basic API key authentication for demo purposes to avoid a dependency on the Function App keys
+    api_key = os.getenv("API_KEY")
+    if api_key and api_key != req.headers.get("authorization"):
+        return func.HttpResponse(status_code=403)
+
     sleep_interval_seconds = int(os.getenv("AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS", "1"))
     num_tokens = int(os.getenv("NUM_TOKENS", "2048"))
     min_chunk_size = int(os.getenv("MIN_CHUNK_SIZE", "10"))
