@@ -306,7 +306,7 @@
                         },
                         {
                             "name": "TextEmbedderFunctionEndpoint",
-                            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2022-09-01').defaultHostName, '/api/chunk-embed?code=', listkeys(concat(resourceId('Microsoft.Web/sites', variables('functionAppName')), '/host/default/'), '2022-09-01').functionKeys.default)]"
+                            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2022-09-01').defaultHostName, '/api/chunk-embed')]"
                         },
                         {
                             "name": "TextEmbedderFunctionApiKey",
