@@ -1,6 +1,6 @@
 # Parameters
 $ResourceGroupName = "az-ai-search"
-$Location = "canadaeast" # Ensure to pick a location that supports the chat and embedding models of Azure OpenAI that you want to use, see https://learn.microsoft.com/azure/ai-services/openai/concepts/models.
+$Location = "eastus" # Ensure to pick a location that supports the chat and embedding models of Azure OpenAI that you want to use, see https://learn.microsoft.com/azure/ai-services/openai/concepts/models.
 $DeploymentPrefix = "aisearch" # Max 8 characters, lowercase letters only.
 
 # Deploy Resource Group
@@ -8,7 +8,7 @@ Get-AzContext | Format-List
 New-AzResourceGroup -Name $ResourceGroupName -Location $Location
 
 # Deploy Template
-$Deployment = New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateFile .\azuredeploy-webapp.json -Name "Deployment-$(Get-Date -Format "yyyy-MM-dd-HH-mm-ss")" -Verbose -prefix $DeploymentPrefix
+$Deployment = New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateFile .\azuredeploy-webapp.json -Name "Deployment-$(Get-Date -Format "yyyy-MM-dd-HH-mm-ss")" -Verbose -resourcePrefix $DeploymentPrefix
 
 $WebAppUrl = $Deployment.Outputs["webAppUrl"].Value
 Write-Host "Deployment status: $($Deployment.ProvisioningState)"

@@ -1,0 +1,20 @@
+.search-caption,
+.search-answer,
+.search-highlight {
+    white-space: pre-wrap;
+}
+
+mark {
+    font-style: italic;
+}
+
+cite {
+    border: solid 1px #ccc;
+    border-radius: .25rem;
+    vertical-align: super;
+    font-size: 75%;
+    margin-left: .5rem;
+    padding-left: .5rem;
+    padding-right: .5rem;
+    white-space: nowrap;
+}

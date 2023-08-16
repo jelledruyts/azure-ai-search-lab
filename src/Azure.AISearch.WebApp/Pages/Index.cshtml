@@ -1,9 +1,130 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Search";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-</div>
+<h2 class="display-6 mb-3">Search</h2>
+
+<form method="post" class="mb-3">
+    @if (Model.History != null && Model.History.Any())
+    {
+        <div class="message-list mb-4">
+            @foreach (var item in Model.History)
+            {
+                var cssClass = Model.History.IndexOf(item) % 2 == 0 ? "border-primary-subtle float-end text-end" : "border-info float-start";
+
+                <input type="hidden" name="history[]" value="@item" />
+                <div class="message-list-item mt-3 p-2 w-75 border rounded search-answer @cssClass">@Html.Raw(item)</div>
+                <div class="clearfix"></div>
+            }
+        </div>
+    }
+    <div class="input-group">
+        <input type="text" class="form-control border-primary" placeholder="Search or ask anything" name="query" />
+        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-send"></i> Send</button>
+    </div>
+</form>
+
+@if (Model.SearchResponses != null && Model.SearchResponses.Any())
+{
+    var searchResponses = Model.SearchResponses.OrderBy(s => s.Priority).ToList();
+    var selectedSearchResponse = searchResponses.First();
+    <ul class="nav nav-tabs" role="tablist">
+        @foreach (var searchResponse in searchResponses)
+        {
+            var cssClass = searchResponse == selectedSearchResponse ? "active" : "";
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @cssClass" id="@searchResponse.ServiceId-tab" data-bs-toggle="tab" data-bs-target="#@searchResponse.ServiceId-tab-pane" type="button" role="tab" aria-controls="@searchResponse.ServiceId-tab-pane" aria-selected="true">@searchResponse.ServiceName</button>
+            </li>
+        }
+    </ul>
+    <div class="tab-content">
+        @foreach (var searchResponse in searchResponses)
+        {
+            var cssClass = searchResponse == selectedSearchResponse ? "show active" : "";
+            <div class="tab-pane fade @cssClass" id="@searchResponse.ServiceId-tab-pane" role="tabpanel" aria-labelledby="@searchResponse.ServiceId-tab" tabindex="0">
+
+                @if (!string.IsNullOrWhiteSpace(searchResponse.Error))
+                {
+                    <div class="alert alert-danger mt-3">@searchResponse.Error</div>
+                }
+
+                <div class="search-results">
+                    @if (searchResponse.Answers.Any())
+                    {
+                        <h3 class="mt-3">@searchResponse.Answers.Count answer(s)</h3>
+                        foreach (var answer in searchResponse.Answers)
+                        {
+                            <figure>
+                                <blockquote class="blockquote search-answer">@Html.Raw(answer.Text)</blockquote>
+                                @if (!string.IsNullOrWhiteSpace(answer.DocumentTitle))
+                                {
+                                    <figcaption class="blockquote-footer">
+                                        From <code>@answer.DocumentTitle</code>
+                                        @if (answer.Score.HasValue)
+                                        {
+                                            <span class="badge bg-secondary ms-1" title="Search score">@answer.Score</span>
+                                        }
+                                    </figcaption>
+                                }
+                            </figure>
+                        }
+                    }
+                    @if (searchResponse.Captions.Any())
+                    {
+                        <h3 class="mt-3">@searchResponse.Captions.Count caption(s)</h3>
+                        foreach (var caption in searchResponse.Captions)
+                        {
+                            <figure>
+                                <blockquote class="blockquote search-caption">@Html.Raw(caption)</blockquote>
+                            </figure>
+                        }
+                    }
+                    @if (searchResponse.SearchResults.Any())
+                    {
+                        <h3 class="mt-3">@searchResponse.SearchResults.Count result(s)</h3>
+                        <ol class="list-group">
+                            @foreach (var searchResult in searchResponse.SearchResults.OrderByDescending(a => a.Score))
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto mb-2">
+                                        <div><code>@searchResult.DocumentTitle</code></div>
+                                        @if (searchResult.Captions.Any())
+                                        {
+                                            <p class="mt-2 fw-medium">Captions:</p>
+                                            <ul>
+                                                @foreach (var item in searchResult.Captions)
+                                                {
+                                                    <li class="search-caption">@Html.Raw(item)</li>
+                                                }
+                                            </ul>
+                                        }
+                                        @if (searchResult.Highlights.Any())
+                                        {
+                                            foreach (var highlight in searchResult.Highlights)
+                                            {
+                                                <p class="mt-2 fw-medium">Highlights from <code>@highlight.Key</code>:</p>
+                                                <ul>
+                                                    @foreach (var item in highlight.Value)
+                                                    {
+                                                        <li class="search-highlight">@Html.Raw(item)</li>
+                                                    }
+                                                </ul>
+                                            }
+                                        }
+                                    </div>
+                                    @if (searchResult.Score.HasValue)
+                                    {
+                                        <span class="badge bg-secondary" title="Search score">@searchResult.Score</span>
+                                    }
+                                </li>
+                            }
+                        </ol>
+                    }
+                </div>
+
+            </div>
+        }
+    </div>
+}

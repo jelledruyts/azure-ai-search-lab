@@ -1,3 +1,6 @@
+using Azure.AISearch.WebApp;
+using Azure.AISearch.WebApp.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -8,6 +11,15 @@ builder.Services.AddRouting(options =>
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient();
+
+var appSettings = new AppSettings();
+builder.Configuration.Bind(appSettings);
+builder.Services.AddSingleton(appSettings);
+builder.Services.AddSingleton<IEmbeddingService, AzureOpenAIEmbeddingService>();
+builder.Services.AddSingleton<ISearchService, AzureOpenAISearchService>();
+builder.Services.AddSingleton<ISearchService, AzureSearchSearchService>();
+builder.Services.AddSingleton<AzureSearchConfigurationService>();
+builder.Services.AddSingleton<AzureStorageConfigurationService>();
 
 var app = builder.Build();
 
