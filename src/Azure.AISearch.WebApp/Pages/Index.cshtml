@@ -89,7 +89,13 @@
                             {
                                 <li class="list-group-item d-flex justify-content-between align-items-start">
                                     <div class="ms-2 me-auto mb-2">
-                                        <div><code>@searchResult.DocumentTitle</code></div>
+                                        <div>
+                                            <code>@searchResult.DocumentTitle</code>
+                                            @if (searchResult.ChunkIndex != null)
+                                            {
+                                                <span>(chunk #<code>@searchResult.ChunkIndex</code>)</span>
+                                            }
+                                        </div>
                                         @if (searchResult.Captions.Any())
                                         {
                                             <p class="mt-2 fw-medium">Captions:</p>

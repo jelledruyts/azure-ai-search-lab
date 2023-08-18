@@ -7,10 +7,6 @@ namespace Azure.AISearch.WebApp.Services;
 
 public class AzureSearchConfigurationService
 {
-    // TODO: Remove consts in favor of readability?
-    // TODO: Allow content language to be specified?
-    public const string SemanticConfigurationNameDefault = "default";
-    private const string VectorSearchConfigurationNameDefault = "default";
     private readonly AppSettings settings;
     private readonly Uri searchServiceUrl;
     private readonly AzureKeyCredential searchServiceAdminCredential;
@@ -30,59 +26,11 @@ public class AzureSearchConfigurationService
         var indexerClient = new SearchIndexerClient(this.searchServiceUrl, searchServiceAdminCredential);
         if (!await SearchIndexExistsAsync(indexClient, documentsIndexName))
         {
-            // Create the search index for the documents.
-            var documentsIndex = GetDocumentsSearchIndex(documentsIndexName);
-            await indexClient.CreateIndexAsync(documentsIndex);
-
-            // Create the Blob Storage data source for the documents.
-            var documentsDataSourceConnection = new SearchIndexerDataSourceConnection($"{documentsIndexName}-datasource", SearchIndexerDataSourceType.AzureBlob, this.settings.StorageAccountConnectionString, new SearchIndexerDataContainer(documentsContainerName));
-            await indexerClient.CreateDataSourceConnectionAsync(documentsDataSourceConnection);
-
-            // Create the skillset which chunks and vectorizes the document's content and stores it as JSON
-            // files in blob storage (as a knowledge store) so it can be indexed separately.
-            var skillset = GetDocumentsIndexerSkillset(documentsIndexName, chunksContainerName);
-            await indexerClient.CreateSkillsetAsync(skillset);
-
-            // Create the indexer.
-            var documentsIndexer = new SearchIndexer($"{documentsIndexName}-indexer", documentsDataSourceConnection.Name, documentsIndex.Name)
-            {
-                Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
-                FieldMappings =
-                {
-                    new FieldMapping("metadata_storage_path") { TargetFieldName = nameof(Document.Id), MappingFunction = new FieldMappingFunction("base64Encode") },
-                    new FieldMapping("metadata_storage_name") { TargetFieldName = nameof(Document.Title) },
-                    new FieldMapping("content") { TargetFieldName = nameof(Document.Content) },
-                    new FieldMapping("metadata_storage_path") { TargetFieldName = nameof(Document.FilePath) }
-                },
-                SkillsetName = skillset.Name
-            };
-            await indexerClient.CreateIndexerAsync(documentsIndexer);
-
-            if (skillset != null)
-            {
-                // Create the index which represents the chunked data from the main indexer's knowledge store.
-                // ArgumentNullException.ThrowIfNull(chunksIndexName);
-                var chunkSearchIndex = GetDocumentChunksSearchIndex(chunksIndexName);
-                await indexClient.CreateIndexAsync(chunkSearchIndex);
-
-                // Create the Storage data source for the chunked data.
-                var chunksDataSourceConnection = new SearchIndexerDataSourceConnection($"{chunksIndexName}-datasource", SearchIndexerDataSourceType.AzureBlob, settings.StorageAccountConnectionString, new SearchIndexerDataContainer(chunksContainerName));
-                await indexerClient.CreateDataSourceConnectionAsync(chunksDataSourceConnection);
-
-                // Create the chunk indexer based on the JSON files in the knowledge store.
-                var chunksIndexer = new SearchIndexer($"{chunksIndexName}-indexer", chunksDataSourceConnection.Name, chunkSearchIndex.Name)
-                {
-                    Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
-                    Parameters = new IndexingParameters()
-                    {
-                        IndexingParametersConfiguration = new IndexingParametersConfiguration()
-                        {
-                            ParsingMode = BlobIndexerParsingMode.Json
-                        }
-                    }
-                };
-                await indexerClient.CreateIndexerAsync(chunksIndexer);
-            }
+            await CreateDocumentsIndex(indexClient, indexerClient, documentsIndexName, documentsContainerName, chunksContainerName);
+        }
+        if (!await SearchIndexExistsAsync(indexClient, chunksIndexName))
+        {
+            await CreateChunksIndex(indexClient, indexerClient, chunksIndexName, chunksContainerName);
         }
     }
 
@@ -97,6 +45,42 @@ public class AzureSearchConfigurationService
         {
             return false;
         }
+    }
+
+    private async Task CreateDocumentsIndex(SearchIndexClient indexClient, SearchIndexerClient indexerClient, string documentsIndexName, string documentsContainerName, string chunksContainerName)
+    {
+        // Create the search index for the documents.
+        var documentsIndex = GetDocumentsSearchIndex(documentsIndexName);
+        await indexClient.CreateIndexAsync(documentsIndex);
+
+        // Create the Blob Storage data source for the documents.
+        var documentsDataSourceConnection = new SearchIndexerDataSourceConnection($"{documentsIndexName}-datasource", SearchIndexerDataSourceType.AzureBlob, this.settings.StorageAccountConnectionString, new SearchIndexerDataContainer(documentsContainerName));
+        await indexerClient.CreateDataSourceConnectionAsync(documentsDataSourceConnection);
+
+        // Create the skillset which chunks and vectorizes the document's content and stores it as JSON
+        // files in blob storage (as a knowledge store) so it can be indexed separately.
+        var skillset = GetDocumentsSearchIndexerSkillset(documentsIndexName, chunksContainerName);
+        await indexerClient.CreateSkillsetAsync(skillset);
+
+        // Create the indexer.
+        var documentsIndexer = new SearchIndexer($"{documentsIndexName}-indexer", documentsDataSourceConnection.Name, documentsIndex.Name)
+        {
+            Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
+            FieldMappings =
+                {
+                    // Map the full blob URL to the document ID, base64 encoded to ensure it has only valid characters for a document ID.
+                    new FieldMapping("metadata_storage_path") { TargetFieldName = nameof(Document.Id), MappingFunction = new FieldMappingFunction("base64Encode") },
+                    // Map the file name to the document title.
+                    new FieldMapping("metadata_storage_name") { TargetFieldName = nameof(Document.Title) },
+                    // Map the file content to the document content.
+                    new FieldMapping("content") { TargetFieldName = nameof(Document.Content) },
+                    // Map the full blob URL as the document file path.
+                    new FieldMapping("metadata_storage_path") { TargetFieldName = nameof(Document.FilePath) }
+                },
+            // Use the skillset for chunking and embedding.
+            SkillsetName = skillset.Name
+        };
+        await indexerClient.CreateIndexerAsync(documentsIndexer);
     }
 
     private static SearchIndex GetDocumentsSearchIndex(string documentsIndexName)
@@ -116,7 +100,7 @@ public class AzureSearchConfigurationService
                 {
                     new SemanticConfiguration
                     (
-                        SemanticConfigurationNameDefault,
+                        Constants.ConfigurationNames.SemanticConfigurationNameDefault,
                         new PrioritizedFields
                         {
                             TitleField = new SemanticField { FieldName = nameof(Document.Title) },
@@ -131,13 +115,8 @@ public class AzureSearchConfigurationService
         };
     }
 
-    private SearchIndexerSkillset GetDocumentsIndexerSkillset(string indexName, string knowledgeStoreContainerName)
+    private SearchIndexerSkillset GetDocumentsSearchIndexerSkillset(string indexName, string knowledgeStoreContainerName)
     {
-        // TODO: Remove consts in favor of readability?
-        const string fieldToVectorize = nameof(Document.Content);
-        const string enrichedDocumentSubPathForChunks = "chunks"; // Store the chunks under the "chunks" property of the enriched document.
-        const string enrichedDocumentPathForChunks = $"/document/{fieldToVectorize}/{enrichedDocumentSubPathForChunks}/*";
-
         return new SearchIndexerSkillset($"{indexName}-skillset", Array.Empty<SearchIndexerSkill>())
         {
             Skills =
@@ -156,14 +135,19 @@ public class AzureSearchConfigurationService
                     },
                     Inputs =
                     {
+                        // Pass the document ID.
                         new InputFieldMappingEntry("document_id") { Source = $"/document/{nameof(Document.Id)}" },
-                        new InputFieldMappingEntry("text") { Source = $"/document/{fieldToVectorize}" },
+                        // Pass the document content as the text to chunk and created the embeddings for.
+                        new InputFieldMappingEntry("text") { Source = $"/document/{nameof(Document.Content)}" },
+                        // Pass the document file path.
                         new InputFieldMappingEntry("filepath") { Source = $"/document/{nameof(Document.FilePath)}" },
-                        new InputFieldMappingEntry("fieldname") { Source = $"='{fieldToVectorize}'" }
+                        // Pass the field name as a string literal.
+                        new InputFieldMappingEntry("fieldname") { Source = $"='{nameof(Document.Content)}'" }
                     },
                     Outputs =
                     {
-                        new OutputFieldMappingEntry("chunks") { TargetName = enrichedDocumentSubPathForChunks } // Store the chunks output under "/document/Content/chunks".
+                        // Store the chunks output under "/document/Content/chunks".
+                        new OutputFieldMappingEntry("chunks") { TargetName = "chunks" }
                     }
                 }
             },
@@ -173,23 +157,34 @@ public class AzureSearchConfigurationService
                 {
                     new KnowledgeStoreProjection
                     {
+                        // Project the chunks to a knowledge store container, where each chunk will be its own JSON document that can be indexed later.
                         Objects =
                         {
                             new KnowledgeStoreObjectProjectionSelector(knowledgeStoreContainerName)
                             {
                                 GeneratedKeyName = nameof(DocumentChunk.Id),
-                                SourceContext = enrichedDocumentPathForChunks, // Iterate over each chunk in "/document/Content/chunks".
+                                // Iterate over each chunk in "/document/Content/chunks".
+                                SourceContext = $"/document/{nameof(Document.Content)}/chunks/*",
                                 Inputs =
                                 {
+                                    // Map the document ID.
                                     new InputFieldMappingEntry(nameof(DocumentChunk.SourceDocumentId)) { Source = $"/document/{nameof(Document.Id)}" },
+                                    // Map the document file path.
                                     new InputFieldMappingEntry(nameof(DocumentChunk.SourceDocumentFilePath)) { Source = $"/document/{nameof(Document.FilePath)}" },
-                                    new InputFieldMappingEntry(nameof(DocumentChunk.SourceDocumentContentField)) { Source = $"{enrichedDocumentPathForChunks}/embedding_metadata/fieldname" },
+                                    // Map the Content field name.
+                                    new InputFieldMappingEntry(nameof(DocumentChunk.SourceDocumentContentField)) { Source = $"/document/{nameof(Document.Content)}/chunks/*/embedding_metadata/fieldname" },
+                                    // Map the document title.
                                     new InputFieldMappingEntry(nameof(DocumentChunk.SourceDocumentTitle)) { Source = $"/document/{nameof(Document.Title)}" },
-                                    new InputFieldMappingEntry(nameof(DocumentChunk.Content)) { Source = $"{enrichedDocumentPathForChunks}/content" },
-                                    new InputFieldMappingEntry(nameof(DocumentChunk.ContentVector)) { Source = $"{enrichedDocumentPathForChunks}/embedding_metadata/embedding" },
-                                    new InputFieldMappingEntry(nameof(DocumentChunk.ChunkIndex)) { Source = $"{enrichedDocumentPathForChunks}/embedding_metadata/index" },
-                                    new InputFieldMappingEntry(nameof(DocumentChunk.ChunkOffset)) { Source = $"{enrichedDocumentPathForChunks}/embedding_metadata/offset" },
-                                    new InputFieldMappingEntry(nameof(DocumentChunk.ChunkLength)) { Source = $"{enrichedDocumentPathForChunks}/embedding_metadata/length" }
+                                    // Map the chunked content.
+                                    new InputFieldMappingEntry(nameof(DocumentChunk.Content)) { Source = $"/document/{nameof(Document.Content)}/chunks/*/content" },
+                                    // Map the embedding vector.
+                                    new InputFieldMappingEntry(nameof(DocumentChunk.ContentVector)) { Source = $"/document/{nameof(Document.Content)}/chunks/*/embedding_metadata/embedding" },
+                                    // Map the chunk index.
+                                    new InputFieldMappingEntry(nameof(DocumentChunk.ChunkIndex)) { Source = $"/document/{nameof(Document.Content)}/chunks/*/embedding_metadata/index" },
+                                    // Map the chunk offset.
+                                    new InputFieldMappingEntry(nameof(DocumentChunk.ChunkOffset)) { Source = $"/document/{nameof(Document.Content)}/chunks/*/embedding_metadata/offset" },
+                                    // Map the chunk length.
+                                    new InputFieldMappingEntry(nameof(DocumentChunk.ChunkLength)) { Source = $"/document/{nameof(Document.Content)}/chunks/*/embedding_metadata/length" }
                                 }
                             }
                         }
@@ -199,7 +194,32 @@ public class AzureSearchConfigurationService
         };
     }
 
-    private static SearchIndex GetDocumentChunksSearchIndex(string chunkIndexName)
+    private async Task CreateChunksIndex(SearchIndexClient indexClient, SearchIndexerClient indexerClient, string chunksIndexName, string chunksContainerName)
+    {
+        // Create the index which represents the chunked data from the main indexer's knowledge store.
+        var chunkSearchIndex = GetChunksSearchIndex(chunksIndexName);
+        await indexClient.CreateIndexAsync(chunkSearchIndex);
+
+        // Create the Storage data source for the chunked data.
+        var chunksDataSourceConnection = new SearchIndexerDataSourceConnection($"{chunksIndexName}-datasource", SearchIndexerDataSourceType.AzureBlob, settings.StorageAccountConnectionString, new SearchIndexerDataContainer(chunksContainerName));
+        await indexerClient.CreateDataSourceConnectionAsync(chunksDataSourceConnection);
+
+        // Create the chunk indexer based on the JSON files in the knowledge store.
+        var chunksIndexer = new SearchIndexer($"{chunksIndexName}-indexer", chunksDataSourceConnection.Name, chunkSearchIndex.Name)
+        {
+            Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
+            Parameters = new IndexingParameters()
+            {
+                IndexingParametersConfiguration = new IndexingParametersConfiguration()
+                {
+                    ParsingMode = BlobIndexerParsingMode.Json
+                }
+            }
+        };
+        await indexerClient.CreateIndexerAsync(chunksIndexer);
+    }
+
+    private static SearchIndex GetChunksSearchIndex(string chunkIndexName)
     {
         return new SearchIndex(chunkIndexName)
         {
@@ -210,7 +230,7 @@ public class AzureSearchConfigurationService
                 new SearchField(nameof(DocumentChunk.ChunkOffset), SearchFieldDataType.Int64) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.ChunkLength), SearchFieldDataType.Int64) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.Content), SearchFieldDataType.String) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.EnMicrosoft },
-                new SearchField(nameof(DocumentChunk.ContentVector), SearchFieldDataType.Collection(SearchFieldDataType.Single)) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, VectorSearchDimensions = 1536, VectorSearchConfiguration = VectorSearchConfigurationNameDefault },
+                new SearchField(nameof(DocumentChunk.ContentVector), SearchFieldDataType.Collection(SearchFieldDataType.Single)) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, VectorSearchDimensions = Constants.VectorDimensions.TextEmbeddingAda002, VectorSearchConfiguration = Constants.ConfigurationNames.VectorSearchConfigurationNameDefault },
                 new SearchField(nameof(DocumentChunk.SourceDocumentId), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.SourceDocumentContentField), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.SourceDocumentTitle), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.EnMicrosoft },
@@ -222,7 +242,7 @@ public class AzureSearchConfigurationService
                 {
                     new SemanticConfiguration
                     (
-                        SemanticConfigurationNameDefault,
+                        Constants.ConfigurationNames.SemanticConfigurationNameDefault,
                         new PrioritizedFields()
                         {
                             TitleField = new SemanticField { FieldName = nameof(DocumentChunk.SourceDocumentTitle) },
@@ -241,7 +261,7 @@ public class AzureSearchConfigurationService
             {
                 AlgorithmConfigurations =
                 {
-                    new HnswVectorSearchAlgorithmConfiguration(VectorSearchConfigurationNameDefault)
+                    new HnswVectorSearchAlgorithmConfiguration(Constants.ConfigurationNames.VectorSearchConfigurationNameDefault)
                     {
                         Parameters = new HnswParameters
                         {

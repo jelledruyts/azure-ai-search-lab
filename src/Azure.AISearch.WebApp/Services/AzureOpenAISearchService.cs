@@ -153,7 +153,7 @@ public class AzureOpenAISearchService : ISearchService
                 InScope = true, // Limit responses to data from the data source only
                 TopNDocuments = 5,
                 QueryType = "semantic",
-                SemanticConfiguration = AzureSearchConfigurationService.SemanticConfigurationNameDefault,
+                SemanticConfiguration = Constants.ConfigurationNames.SemanticConfigurationNameDefault,
                 RoleInformation = SystemRoleInformation
             }
         };

@@ -16,9 +16,9 @@ public class AzureSearchSearchService : ISearchService
     private readonly AppSettings settings;
     private readonly Uri searchServiceUrl;
     private readonly AzureKeyCredential searchServiceAdminCredential;
-    private readonly IEmbeddingService? embeddingService;
+    private readonly IEmbeddingService embeddingService;
 
-    public AzureSearchSearchService(AppSettings settings, IEmbeddingService? embeddingService = null)
+    public AzureSearchSearchService(AppSettings settings, IEmbeddingService embeddingService)
     {
         ArgumentNullException.ThrowIfNull(settings.SearchServiceUrl);
         ArgumentNullException.ThrowIfNull(settings.SearchServiceAdminKey);
@@ -81,7 +81,7 @@ public class AzureSearchSearchService : ISearchService
 
             if (queryType == SearchQueryType.Semantic)
             {
-                searchOptions.SemanticConfigurationName = AzureSearchConfigurationService.SemanticConfigurationNameDefault;
+                searchOptions.SemanticConfigurationName = Constants.ConfigurationNames.SemanticConfigurationNameDefault;
                 searchOptions.QueryLanguage = QueryLanguage.EnUs;
                 searchOptions.QueryAnswer = QueryAnswerType.Extractive;
                 searchOptions.QueryCaption = QueryCaptionType.Extractive;
@@ -101,6 +101,8 @@ public class AzureSearchSearchService : ISearchService
                 searchOptions.Select.Add(nameof(DocumentChunk.Id));
                 searchOptions.Select.Add(nameof(DocumentChunk.SourceDocumentId));
                 searchOptions.Select.Add(nameof(DocumentChunk.SourceDocumentTitle));
+                searchOptions.Select.Add(nameof(DocumentChunk.Content));
+                searchOptions.Select.Add(nameof(DocumentChunk.ChunkIndex));
                 if (!vectorOnlySearch)
                 {
                     // Don't request highlights for vector-only search, as that doesn't make
@@ -112,7 +114,6 @@ public class AzureSearchSearchService : ISearchService
 
             if (useVectorSearch)
             {
-                ArgumentNullException.ThrowIfNull(this.embeddingService);
                 ArgumentNullException.ThrowIfNull(request.Query);
 
                 // Generate an embedding vector for the search query text.
@@ -139,6 +140,8 @@ public class AzureSearchSearchService : ISearchService
                 var documentKey = default(string);
                 var documentId = default(string);
                 var documentTitle = default(string);
+                var documentContent = default(string);
+                var chunkIndex = default(int?);
                 if (!useChunksIndex)
                 {
                     documentKey = result.Document.GetString(nameof(Document.Id));
@@ -150,15 +153,26 @@ public class AzureSearchSearchService : ISearchService
                     documentKey = result.Document.GetString(nameof(DocumentChunk.Id));
                     documentId = result.Document.GetString(nameof(DocumentChunk.SourceDocumentId));
                     documentTitle = result.Document.GetString(nameof(DocumentChunk.SourceDocumentTitle));
+                    documentContent = result.Document.GetString(nameof(DocumentChunk.Content));
+                    chunkIndex = result.Document.GetInt32(nameof(DocumentChunk.ChunkIndex));
                 }
-                response.SearchResults.Add(new SearchResult
+                var searchResult = new SearchResult
                 {
                     Score = result.Score,
                     Highlights = result.Highlights ?? new Dictionary<string, IList<string>>(),
-                    Captions = result.Captions == null ? Array.Empty<string>() : result.Captions.Select(c => string.IsNullOrWhiteSpace(c.Highlights) ? c.Text : c.Highlights).ToList(),
+                    Captions = result.Captions == null ? new List<string>() : result.Captions.Select(c => string.IsNullOrWhiteSpace(c.Highlights) ? c.Text : c.Highlights).ToList(),
                     DocumentId = documentId,
-                    DocumentTitle = documentTitle
-                });
+                    DocumentTitle = documentTitle,
+                    ChunkIndex = chunkIndex
+                };
+                response.SearchResults.Add(searchResult);
+
+                // If using the chunks index for vector-only search, add the actual chunk content to the
+                // response's captions to at least show the context of the response.
+                if (vectorOnlySearch && !string.IsNullOrWhiteSpace(documentContent))
+                {
+                    searchResult.Captions.Add(documentContent);
+                }
 
                 // Answers may refer to chunk IDs, ensure to map them to the right document ID.
                 foreach (var answerForDocumentKey in response.Answers.Where(a => a.Key == documentKey))

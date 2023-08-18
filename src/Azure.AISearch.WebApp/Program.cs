@@ -12,6 +12,7 @@ builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient();
 
+// Inject application services.
 var appSettings = new AppSettings();
 builder.Configuration.Bind(appSettings);
 builder.Services.AddSingleton(appSettings);
@@ -20,6 +21,9 @@ builder.Services.AddSingleton<ISearchService, AzureOpenAISearchService>();
 builder.Services.AddSingleton<ISearchService, AzureSearchSearchService>();
 builder.Services.AddSingleton<AzureSearchConfigurationService>();
 builder.Services.AddSingleton<AzureStorageConfigurationService>();
+
+// Asynchronously initialize the application on startup.
+builder.Services.AddHostedService<InitializationHostedService>();
 
 var app = builder.Build();
 

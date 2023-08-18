@@ -6,8 +6,6 @@ namespace Azure.AISearch.WebApp.Pages;
 
 public class IndexModel : PageModel
 {
-    private readonly AzureStorageConfigurationService azureStorageConfigurationService;
-    private readonly AzureSearchConfigurationService azureSearchConfigurationService;
     private readonly IEnumerable<ISearchService> searchServices;
 
     public string? Query { get; set; }
@@ -16,16 +14,7 @@ public class IndexModel : PageModel
 
     public IndexModel(AzureSearchConfigurationService azureSearchConfigurationService, AzureStorageConfigurationService azureStorageConfigurationService, IEnumerable<ISearchService> searchServices)
     {
-        this.azureSearchConfigurationService = azureSearchConfigurationService;
-        this.azureStorageConfigurationService = azureStorageConfigurationService;
         this.searchServices = searchServices;
-    }
-
-    public async Task OnGet()
-    {
-        await this.azureStorageConfigurationService.CreateContainerIfNotExistsAsync(Constants.ContainerNames.BlobDocuments);
-        await this.azureStorageConfigurationService.CreateContainerIfNotExistsAsync(Constants.ContainerNames.BlobChunks);
-        await this.azureSearchConfigurationService.InitializeSearchAsync(Constants.IndexNames.BlobDocuments, Constants.IndexNames.BlobChunks, Constants.ContainerNames.BlobDocuments, Constants.ContainerNames.BlobChunks);
     }
 
     public async Task OnPost(string query, IList<string> history)

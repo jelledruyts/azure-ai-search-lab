@@ -21,4 +21,15 @@ public static class Constants
         public const string Tool = "tool";
         public const string User = "user";
     }
+
+    public static class VectorDimensions
+    {
+        public const int TextEmbeddingAda002 = 1536;
+    }
+
+    public static class ConfigurationNames
+    {
+        public const string SemanticConfigurationNameDefault = "default";
+        public const string VectorSearchConfigurationNameDefault = "default";
+    }
 }

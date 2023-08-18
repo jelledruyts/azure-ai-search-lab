@@ -8,4 +8,5 @@ public class SearchResult
 
     public string? DocumentId { get; set; }
     public string? DocumentTitle { get; set; }
+    public int? ChunkIndex { get; set; }
 }
