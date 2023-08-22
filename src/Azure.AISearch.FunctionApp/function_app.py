@@ -37,11 +37,6 @@ def text_chunking(req: func.HttpRequest) -> func.HttpResponse:
     if api_key and api_key != req.headers.get("authorization"):
         return func.HttpResponse(status_code=403)
 
-    sleep_interval_seconds = int(os.getenv("AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS", "1"))
-    num_tokens = int(os.getenv("NUM_TOKENS", "2048"))
-    min_chunk_size = int(os.getenv("MIN_CHUNK_SIZE", "10"))
-    token_overlap = int(os.getenv("TOKEN_OVERLAP", "0"))
-
     request = req.get_json()
 
     try:
@@ -56,15 +51,24 @@ def text_chunking(req: func.HttpRequest) -> func.HttpResponse:
         text = value['data']['text']
         filepath = value['data']['filepath']
         fieldname = value['data']['fieldname']
-        logging.info(f'Processing record "{recordId}":')
-        logging.info(f'- document_id: "{document_id}"')
-        logging.info(f'- filepath: "{filepath}"')
-    
+        num_tokens_request = value['data']['num_tokens']
+        token_overlap_request = value['data']['token_overlap']
+        min_chunk_size_request = value['data']['min_chunk_size']
+        embedding_deployment_name_request = value['data']['embedding_deployment_name']
+        logging.info(f'Processing record "{recordId}" with document id "{document_id}" and filepath "{filepath}".')
+
+        # Set parameters from environment variables (configuration) but allow some to be overridden per request
+        sleep_interval_seconds = int(os.getenv("AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS", "1"))
+        num_tokens = num_tokens_request if num_tokens_request else int(os.getenv("NUM_TOKENS", "2048"))
+        token_overlap = token_overlap_request if token_overlap_request else int(os.getenv("TOKEN_OVERLAP", "0"))
+        min_chunk_size = min_chunk_size_request if min_chunk_size_request else int(os.getenv("MIN_CHUNK_SIZE", "10"))
+        embedding_deployment_name = embedding_deployment_name_request if embedding_deployment_name_request else os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
+
         # chunk documents into chunks of (by default) 2048 tokens, and for each chunk, generate the vector embedding
         logging.info(f'Chunking to {num_tokens} tokens (min chunk size is {min_chunk_size}, token overlap is {token_overlap}).')
         chunking_result = TEXT_CHUNKER.chunk_content(text, file_path=filepath, num_tokens=num_tokens, min_chunk_size=min_chunk_size, token_overlap=token_overlap)
-        logging.info(f'Generating embeddings for {len(chunking_result.chunks)} chunks.')
-        content_chunk_metadata = CHUNK_METADATA_HELPER.generate_chunks_with_embedding(document_id, [c.content for c in chunking_result.chunks], fieldname, sleep_interval_seconds)
+        logging.info(f'Generating embeddings for {len(chunking_result.chunks)} chunks using deployment "{embedding_deployment_name}".')
+        content_chunk_metadata = CHUNK_METADATA_HELPER.generate_chunks_with_embedding(document_id, [c.content for c in chunking_result.chunks], fieldname, sleep_interval_seconds, embedding_deployment_name)
 
         for document_chunk, embedding_metadata in zip(chunking_result.chunks, content_chunk_metadata):
             document_chunk.embedding_metadata = embedding_metadata
@@ -103,7 +107,11 @@ def get_request_schema():
                                 "text": {"type": "string", "minLength": 1},
                                 "document_id": {"type": "string", "minLength": 1},
                                 "filepath": {"type": "string", "minLength": 1},
-                                "fieldname": {"type": "string", "minLength": 1}
+                                "fieldname": {"type": "string", "minLength": 1},
+                                "num_tokens": {"type": "integer"},
+                                "token_overlap": {"type": "integer"},
+                                "min_chunk_size": {"type": "integer"},
+                                "embedding_deployment_name": {"type": "string"}
                             },
                             "required": ["text", "document_id", "filepath", "fieldname"],
                         },
