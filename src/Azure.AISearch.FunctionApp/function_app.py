@@ -51,18 +51,14 @@ def text_chunking(req: func.HttpRequest) -> func.HttpResponse:
         text = value['data']['text']
         filepath = value['data']['filepath']
         fieldname = value['data']['fieldname']
-        num_tokens_request = value['data']['num_tokens']
-        token_overlap_request = value['data']['token_overlap']
-        min_chunk_size_request = value['data']['min_chunk_size']
-        embedding_deployment_name_request = value['data']['embedding_deployment_name']
         logging.info(f'Processing record "{recordId}" with document id "{document_id}" and filepath "{filepath}".')
 
         # Set parameters from environment variables (configuration) but allow some to be overridden per request
         sleep_interval_seconds = int(os.getenv("AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS", "1"))
-        num_tokens = num_tokens_request if num_tokens_request else int(os.getenv("NUM_TOKENS", "2048"))
-        token_overlap = token_overlap_request if token_overlap_request else int(os.getenv("TOKEN_OVERLAP", "0"))
-        min_chunk_size = min_chunk_size_request if min_chunk_size_request else int(os.getenv("MIN_CHUNK_SIZE", "10"))
-        embedding_deployment_name = embedding_deployment_name_request if embedding_deployment_name_request else os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
+        num_tokens = value['data']['num_tokens'] if 'num_tokens' in value['data'] else int(os.getenv("NUM_TOKENS", "2048"))
+        token_overlap = value['data']['token_overlap'] if 'token_overlap' in value['data'] else int(os.getenv("TOKEN_OVERLAP", "0"))
+        min_chunk_size = value['data']['min_chunk_size'] if 'min_chunk_size' in value['data'] else int(os.getenv("MIN_CHUNK_SIZE", "10"))
+        embedding_deployment_name = value['data']['embedding_deployment_name'] if 'embedding_deployment_name' in value['data'] else os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
 
         # chunk documents into chunks of (by default) 2048 tokens, and for each chunk, generate the vector embedding
         logging.info(f'Chunking to {num_tokens} tokens (min chunk size is {min_chunk_size}, token overlap is {token_overlap}).')
