@@ -6,39 +6,33 @@ namespace Azure.AISearch.WebApp.Pages;
 
 public class IndexModel : PageModel
 {
-    private readonly IEnumerable<ISearchService> searchServices;
+    private readonly SearchService searchService;
+    public SearchRequest SearchRequest { get; set; }
+    public SearchResponse? SearchResponse { get; set; }
 
-    public string? Query { get; set; }
-    public IList<string>? History { get; set; }
-    public IList<SearchResponse>? SearchResponses { get; set; }
-
-    public IndexModel(AzureSearchConfigurationService azureSearchConfigurationService, AzureStorageConfigurationService azureStorageConfigurationService, IEnumerable<ISearchService> searchServices)
+    public IndexModel(SearchService searchService)
     {
-        this.searchServices = searchServices;
+        this.searchService = searchService;
+        this.SearchRequest = new SearchRequest();
     }
 
-    public async Task OnPost(string query, IList<string> history)
+    public async Task OnPost(SearchRequest searchRequest)
     {
-        if (!string.IsNullOrWhiteSpace(query))
+        this.SearchRequest = searchRequest;
+        if (!string.IsNullOrWhiteSpace(this.SearchRequest.Query))
         {
-            var request = new SearchRequest
-            {
-                Query = query,
-                History = history
-            };
-            var searchTasks = this.searchServices.SelectMany(s => s.SearchAsync(request)).ToArray();
-            await Task.WhenAll(searchTasks);
-            this.SearchResponses = searchTasks.Select(t => t.Result).ToList();
-            this.Query = query;
-            var updatedHistory = new List<string>(history);
-            updatedHistory.Add(query);
-            // Take the top answer from the highest priority service to include in the chat history.
-            var topAnswer = this.SearchResponses.OrderBy(r => r.Priority).SelectMany(r => r.Answers.Where(a => !string.IsNullOrWhiteSpace(a.Text)).OrderBy(a => a.Score)).FirstOrDefault();
+            this.SearchRequest.History.Add(this.SearchRequest.Query);
+            this.SearchResponse = await this.searchService.SearchAsync(this.SearchRequest);
+            var topAnswer = this.SearchResponse.Answers.Where(a => !string.IsNullOrWhiteSpace(a.Text)).OrderBy(a => a.Score).FirstOrDefault();
             if (topAnswer?.Text != null)
             {
-                updatedHistory.Add(topAnswer.Text);
+                this.SearchRequest.History.Add(topAnswer.Text);
             }
-            this.History = updatedHistory;
+            else
+            {
+                // TODO: This isn't needed if history contains the role (user/assistant).
+                this.SearchRequest.History.Add("Sorry, I don't have an answer for you.");
+            }
         }
     }
 }

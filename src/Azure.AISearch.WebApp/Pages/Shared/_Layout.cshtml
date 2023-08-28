@@ -21,7 +21,8 @@
                 </button>
                 <div class="collapse navbar-collapse">
                     <div class="navbar-nav flex-grow-1">
-                        <a class="nav-link @(this.ViewContext.View.Path.StartsWith("/Pages/Index", StringComparison.OrdinalIgnoreCase) ? "active": "")" asp-page="/Index">Home</a>
+                        <a class="nav-link @(this.ViewContext.View.Path.StartsWith("/Pages/Index", StringComparison.OrdinalIgnoreCase) ? "active": "")" asp-page="/Index">Search</a>
+                        <a class="nav-link @(this.ViewContext.View.Path.StartsWith("/Pages/Compare", StringComparison.OrdinalIgnoreCase) ? "active": "")" asp-page="/Compare">Compare</a>
                     </div>
                     <div class="navbar-nav">
                         <div class="nav-item dropdown">

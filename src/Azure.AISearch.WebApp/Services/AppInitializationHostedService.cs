@@ -1,11 +1,11 @@
 namespace Azure.AISearch.WebApp.Services;
 
-public class InitializationHostedService : IHostedService
+public class AppInitializationHostedService : IHostedService
 {
     private readonly AzureStorageConfigurationService azureStorageConfigurationService;
-    private readonly AzureSearchConfigurationService azureSearchConfigurationService;
+    private readonly AzureCognitiveSearchConfigurationService azureSearchConfigurationService;
 
-    public InitializationHostedService(AzureSearchConfigurationService azureSearchConfigurationService, AzureStorageConfigurationService azureStorageConfigurationService)
+    public AppInitializationHostedService(AzureCognitiveSearchConfigurationService azureSearchConfigurationService, AzureStorageConfigurationService azureStorageConfigurationService)
     {
         this.azureSearchConfigurationService = azureSearchConfigurationService;
         this.azureStorageConfigurationService = azureStorageConfigurationService;

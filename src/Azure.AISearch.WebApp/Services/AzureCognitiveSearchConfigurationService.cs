@@ -5,13 +5,13 @@ using Azure.Search.Documents.Indexes.Models;
 
 namespace Azure.AISearch.WebApp.Services;
 
-public class AzureSearchConfigurationService
+public class AzureCognitiveSearchConfigurationService
 {
     private readonly AppSettings settings;
     private readonly Uri searchServiceUrl;
     private readonly AzureKeyCredential searchServiceAdminCredential;
 
-    public AzureSearchConfigurationService(AppSettings settings)
+    public AzureCognitiveSearchConfigurationService(AppSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings.SearchServiceUrl);
         ArgumentNullException.ThrowIfNull(settings.SearchServiceAdminKey);
@@ -142,7 +142,9 @@ public class AzureSearchConfigurationService
                         // Pass the document file path.
                         new InputFieldMappingEntry("filepath") { Source = $"/document/{nameof(Document.FilePath)}" },
                         // Pass the field name as a string literal.
-                        new InputFieldMappingEntry("fieldname") { Source = $"='{nameof(Document.Content)}'" }
+                        new InputFieldMappingEntry("fieldname") { Source = $"='{nameof(Document.Content)}'" },
+                        // Pass the embedding deployment to use as a string literal.
+                        new InputFieldMappingEntry("embedding_deployment_name") { Source = $"='{this.settings.OpenAIEmbeddingDeployment}'" }
                     },
                     Outputs =
                     {

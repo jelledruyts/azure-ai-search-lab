@@ -7,12 +7,97 @@
 <h2 class="display-6 mb-3">Search</h2>
 
 <form method="post" class="mb-3">
-    @if (Model.History != null && Model.History.Any())
+
+    <div class="mb-2">
+        <label class="form-label">Primary Service</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureCognitiveSearch" value="@PrimaryServiceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureCognitiveSearch)">
+                <label class="form-check-label" for="searchRequest-PrimaryService-AzureCognitiveSearch">Azure Cognitive Search</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureOpenAI" value="@PrimaryServiceType.AzureOpenAI" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureOpenAI)">
+                <label class="form-check-label" for="searchRequest-PrimaryService-AzureOpenAI">Azure OpenAI</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">Search Index</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobDocuments" value="@Constants.IndexNames.BlobDocuments" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobDocuments)">
+                <label class="form-check-label" for="searchRequest-SearchIndexName-BlobDocuments">Documents</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobChunks" value="@Constants.IndexNames.BlobChunks" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobChunks)">
+                <label class="form-check-label" for="searchRequest-SearchIndexName-BlobChunks">Chunks</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">Query Type</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Text" value="@QueryType.Text" checked="@(Model.SearchRequest.QueryType == QueryType.Text)">
+                <label class="form-check-label" for="searchRequest-QueryType-Text">Text</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" checked="@(Model.SearchRequest.QueryType == QueryType.Vector)">
+                <label class="form-check-label" for="searchRequest-QueryType-Vector">Vector only</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Hybrid" value="@QueryType.Hybrid" checked="@(Model.SearchRequest.QueryType == QueryType.Hybrid)">
+                <label class="form-check-label" for="searchRequest-QueryType-Hybrid">Hybrid (text + vector)</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">Text Query Type</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.TextQueryType)" id="searchRequest-TextQueryType-Standard" value="@TextQueryType.Standard" checked="@(Model.SearchRequest.TextQueryType == TextQueryType.Standard)">
+                <label class="form-check-label" for="searchRequest-TextQueryType-Standard">Standard</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.TextQueryType)" id="searchRequest-TextQueryType-Semantic" value="@TextQueryType.Semantic" checked="@(Model.SearchRequest.TextQueryType == TextQueryType.Semantic)">
+                <label class="form-check-label" for="searchRequest-TextQueryType-Semantic">Semantic</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">Data Source</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-None" value="@DataSourceType.None" checked="@(Model.SearchRequest.DataSource == DataSourceType.None)">
+                <label class="form-check-label" for="searchRequest-DataSource-None">None</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-AzureCognitiveSearch" value="@DataSourceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.DataSource == DataSourceType.AzureCognitiveSearch)">
+                <label class="form-check-label" for="searchRequest-DataSource-AzureCognitiveSearch">Azure Cognitive Search (&quot;On Your Data&quot;)</label>
+            </div>
+            <div class="form-check form-check-inline form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.LimitToDataSource)" id="searchRequest-LimitToDataSource" checked="@Model.SearchRequest.LimitToDataSource" value="true">
+                <input type="hidden" name="@nameof(SearchRequest.LimitToDataSource)" value="false" />
+                <label class="form-check-label" for="searchRequest-LimitToDataSource">Limit to your data</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label" for="searchRequest-SystemRoleInformation">System role information</label>
+        <input type="text" class="form-control" name="@nameof(SearchRequest.SystemRoleInformation)" id="searchRequest-SystemRoleInformation" value="@Model.SearchRequest.SystemRoleInformation">
+    </div>
+
+    @if (Model.SearchRequest?.History != null && Model.SearchRequest.History.Any())
     {
         <div class="message-list mb-4">
-            @foreach (var item in Model.History)
+            @foreach (var item in Model.SearchRequest.History)
             {
-                var cssClass = Model.History.IndexOf(item) % 2 == 0 ? "border-primary-subtle float-end text-end" : "border-info float-start";
+                var cssClass = Model.SearchRequest.History.IndexOf(item) % 2 == 0 ? "border-primary-subtle float-end text-end" : "border-info float-start";
 
                 <input type="hidden" name="history[]" value="@item" />
                 <div class="message-list-item mt-3 p-2 w-75 border rounded search-answer @cssClass">@Html.Raw(item)</div>
@@ -20,117 +105,11 @@
             }
         </div>
     }
-    <div class="input-group">
-        <input type="text" class="form-control border-primary" placeholder="Search or ask anything" name="query" />
+
+    <div class="input-group mt-3">
+        <input type="text" class="form-control border-primary" placeholder="Search or ask anything" name="@nameof(SearchRequest.Query)" />
         <button class="btn btn-outline-primary" type="submit"><i class="bi bi-send"></i> Send</button>
     </div>
 </form>
 
-@if (Model.SearchResponses != null && Model.SearchResponses.Any())
-{
-    var searchResponses = Model.SearchResponses.OrderBy(s => s.Priority).ToList();
-    var selectedSearchResponse = searchResponses.First();
-    <ul class="nav nav-tabs" role="tablist">
-        @foreach (var searchResponse in searchResponses)
-        {
-            var cssClass = searchResponse == selectedSearchResponse ? "active" : "";
-            <li class="nav-item" role="presentation">
-                <button class="nav-link @cssClass" id="@searchResponse.ServiceId-tab" data-bs-toggle="tab" data-bs-target="#@searchResponse.ServiceId-tab-pane" type="button" role="tab" aria-controls="@searchResponse.ServiceId-tab-pane" aria-selected="true">@searchResponse.ServiceName</button>
-            </li>
-        }
-    </ul>
-    <div class="tab-content">
-        @foreach (var searchResponse in searchResponses)
-        {
-            var cssClass = searchResponse == selectedSearchResponse ? "show active" : "";
-            <div class="tab-pane fade @cssClass" id="@searchResponse.ServiceId-tab-pane" role="tabpanel" aria-labelledby="@searchResponse.ServiceId-tab" tabindex="0">
-
-                @if (!string.IsNullOrWhiteSpace(searchResponse.Error))
-                {
-                    <div class="alert alert-danger mt-3">@searchResponse.Error</div>
-                }
-
-                <div class="search-results">
-                    @if (searchResponse.Answers.Any())
-                    {
-                        <h3 class="mt-3">@searchResponse.Answers.Count answer(s)</h3>
-                        foreach (var answer in searchResponse.Answers)
-                        {
-                            <figure>
-                                <blockquote class="blockquote search-answer">@Html.Raw(answer.Text)</blockquote>
-                                @if (!string.IsNullOrWhiteSpace(answer.DocumentTitle))
-                                {
-                                    <figcaption class="blockquote-footer">
-                                        From <code>@answer.DocumentTitle</code>
-                                        @if (answer.Score.HasValue)
-                                        {
-                                            <span class="badge bg-secondary ms-1" title="Search score">@answer.Score</span>
-                                        }
-                                    </figcaption>
-                                }
-                            </figure>
-                        }
-                    }
-                    @if (searchResponse.Captions.Any())
-                    {
-                        <h3 class="mt-3">@searchResponse.Captions.Count caption(s)</h3>
-                        foreach (var caption in searchResponse.Captions)
-                        {
-                            <figure>
-                                <blockquote class="blockquote search-caption">@Html.Raw(caption)</blockquote>
-                            </figure>
-                        }
-                    }
-                    @if (searchResponse.SearchResults.Any())
-                    {
-                        <h3 class="mt-3">@searchResponse.SearchResults.Count result(s)</h3>
-                        <ol class="list-group">
-                            @foreach (var searchResult in searchResponse.SearchResults.OrderByDescending(a => a.Score))
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-start">
-                                    <div class="ms-2 me-auto mb-2">
-                                        <div>
-                                            <code>@searchResult.DocumentTitle</code>
-                                            @if (searchResult.ChunkIndex != null)
-                                            {
-                                                <span>(chunk #<code>@searchResult.ChunkIndex</code>)</span>
-                                            }
-                                        </div>
-                                        @if (searchResult.Captions.Any())
-                                        {
-                                            <p class="mt-2 fw-medium">Captions:</p>
-                                            <ul>
-                                                @foreach (var item in searchResult.Captions)
-                                                {
-                                                    <li class="search-caption">@Html.Raw(item)</li>
-                                                }
-                                            </ul>
-                                        }
-                                        @if (searchResult.Highlights.Any())
-                                        {
-                                            foreach (var highlight in searchResult.Highlights)
-                                            {
-                                                <p class="mt-2 fw-medium">Highlights from <code>@highlight.Key</code>:</p>
-                                                <ul>
-                                                    @foreach (var item in highlight.Value)
-                                                    {
-                                                        <li class="search-highlight">@Html.Raw(item)</li>
-                                                    }
-                                                </ul>
-                                            }
-                                        }
-                                    </div>
-                                    @if (searchResult.Score.HasValue)
-                                    {
-                                        <span class="badge bg-secondary" title="Search score">@searchResult.Score</span>
-                                    }
-                                </li>
-                            }
-                        </ol>
-                    }
-                </div>
-
-            </div>
-        }
-    </div>
-}
+<partial name="_SearchResponse" model="Model.SearchResponse" />
