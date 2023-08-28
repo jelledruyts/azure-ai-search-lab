@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Azure.AISearch.WebApp.Infrastructure;
 using Azure.AISearch.WebApp.Models;
 
 namespace Azure.AISearch.WebApp.Services;

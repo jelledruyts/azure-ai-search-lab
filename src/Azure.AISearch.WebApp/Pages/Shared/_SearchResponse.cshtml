@@ -10,7 +10,7 @@
     <div class="search-results">
         @if (Model.Answers.Any())
         {
-            <h4 class="mt-3">@Model.Answers.Count answer(s)</h4>
+            <h4 class="mt-3">@Model.Answers.ToCountString("answer")</h4>
             foreach (var answer in Model.Answers)
             {
                 <figure>
@@ -21,7 +21,7 @@
                             From <code>@answer.DocumentTitle</code>
                             @if (answer.Score.HasValue)
                             {
-                                <span class="badge bg-secondary ms-1" title="Search score">@answer.Score</span>
+                                <span class="badge bg-secondary ms-1" title="Search score: @answer.Score">@answer.Score.ToScoreString()</span>
                             }
                         </figcaption>
                     }
@@ -31,7 +31,7 @@
 
         @if (Model.Captions.Any())
         {
-            <h4 class="mt-3">@Model.Captions.Count caption(s)</h4>
+            <h4 class="mt-3">@Model.Captions.ToCountString("caption")</h4>
             foreach (var caption in Model.Captions)
             {
                 <figure>
@@ -42,7 +42,7 @@
 
         @if (Model.SearchResults.Any())
         {
-            <h4 class="mt-3">@Model.SearchResults.Count result(s)</h4>
+            <h4 class="mt-3">@Model.SearchResults.ToCountString("result")</h4>
             <ol class="list-group">
                 @foreach (var searchResult in Model.SearchResults.OrderByDescending(a => a.Score))
                 {
@@ -81,7 +81,7 @@
                         </div>
                         @if (searchResult.Score.HasValue)
                         {
-                            <span class="badge bg-secondary" title="Search score">@searchResult.Score</span>
+                            <span class="badge bg-secondary" title="Search score: @searchResult.Score">@searchResult.Score.ToScoreString()</span>
                         }
                     </li>
                 }

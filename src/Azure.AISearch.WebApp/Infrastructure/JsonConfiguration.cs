@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Azure.AISearch.WebApp.Services;
+namespace Azure.AISearch.WebApp.Infrastructure;
 
 public static class JsonConfiguration
 {
