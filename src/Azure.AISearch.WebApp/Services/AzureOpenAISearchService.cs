@@ -17,6 +17,13 @@ public class AzureOpenAISearchService
     public async Task<SearchResponse> SearchAsync(SearchRequest request)
     {
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
+        ArgumentNullException.ThrowIfNull(request.Query);
+        var searchResponse = new SearchResponse
+        {
+            RequestId = request.Id,
+            DisplayName = request.DisplayName
+        };
+
         var messages = new List<ChatRequestMessage>();
         messages.Add(new ChatRequestMessage { Role = Constants.ChatRoles.System, Content = request.SystemRoleInformation });
         if (request.History != null && request.History.Any())
@@ -25,10 +32,12 @@ public class AzureOpenAISearchService
             foreach (var item in request.History)
             {
                 messages.Add(new ChatRequestMessage { Role = role, Content = item });
+                searchResponse.History.Add(item);
                 role = role == Constants.ChatRoles.User ? Constants.ChatRoles.Assistant : Constants.ChatRoles.User;
             }
         }
         messages.Add(new ChatRequestMessage { Role = Constants.ChatRoles.User, Content = request.Query });
+        searchResponse.History.Add(request.Query);
         var serviceRequest = new ChatCompletionsRequest
         {
             Messages = messages
@@ -41,12 +50,6 @@ public class AzureOpenAISearchService
             serviceRequestUrl = new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIGptDeployment}/extensions/chat/completions?api-version=2023-06-01-preview");
             serviceRequest.DataSources = new[] { GetAzureCognitiveSearchDataSource(request) };
         }
-
-        var searchResponse = new SearchResponse
-        {
-            RequestId = request.Id,
-            DisplayName = request.DisplayName
-        };
 
         var httpClient = this.httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("api-key", this.settings.OpenAIApiKey);
@@ -103,6 +106,7 @@ public class AzureOpenAISearchService
             }
         }
         searchResponse.Answers = new[] { new SearchAnswer { Text = answerText } };
+        searchResponse.History.Add(answerText);
         return searchResponse;
     }
 
@@ -125,7 +129,7 @@ public class AzureOpenAISearchService
                 },
                 InScope = request.LimitToDataSource, // Limit responses to data from the data source only
                 QueryType = GetQueryType(request),
-                SemanticConfiguration = request.TextQueryType == TextQueryType.Semantic ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
+                SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
                 RoleInformation = request.SystemRoleInformation
             }
         };
@@ -133,11 +137,11 @@ public class AzureOpenAISearchService
 
     private AzureCognitiveSearchQueryType GetQueryType(SearchRequest request)
     {
-        if (request.QueryType == QueryType.Text && request.TextQueryType == TextQueryType.Standard)
+        if (request.QueryType == QueryType.TextStandard)
         {
             return AzureCognitiveSearchQueryType.simple;
         }
-        else if (request.QueryType == QueryType.Text && request.TextQueryType == TextQueryType.Semantic)
+        else if (request.QueryType == QueryType.TextSemantic)
         {
             return AzureCognitiveSearchQueryType.semantic;
         }
@@ -145,17 +149,17 @@ public class AzureOpenAISearchService
         {
             return AzureCognitiveSearchQueryType.vector;
         }
-        else if (request.QueryType == QueryType.Hybrid && request.TextQueryType == TextQueryType.Semantic)
-        {
-            return AzureCognitiveSearchQueryType.vectorSemanticHybrid;
-        }
-        else if (request.QueryType == QueryType.Hybrid && request.TextQueryType == TextQueryType.Semantic)
+        else if (request.QueryType == QueryType.HybridStandard)
         {
             return AzureCognitiveSearchQueryType.vectorSimpleHybrid;
         }
+        else if (request.QueryType == QueryType.HybridSemantic)
+        {
+            return AzureCognitiveSearchQueryType.vectorSemanticHybrid;
+        }
         else
         {
-            throw new NotSupportedException($"Unsupported combination of query type \"{request.QueryType}\" and text query type \"{request.TextQueryType}\".");
+            throw new NotSupportedException($"Unsupported query type \"{request.QueryType}\".");
         }
     }
 }

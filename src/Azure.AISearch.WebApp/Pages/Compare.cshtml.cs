@@ -8,6 +8,7 @@ public class CompareModel : PageModel
 {
     private readonly SearchService searchService;
 
+    public string? Query { get; set; }
     public IList<SearchResponse>? SearchResponses { get; set; }
 
     public CompareModel(SearchService searchService)
@@ -17,19 +18,15 @@ public class CompareModel : PageModel
 
     public async Task OnPost(string query)
     {
-        if (!string.IsNullOrWhiteSpace(query))
+        this.Query = query;
+        var searchTasks = new List<Task<SearchResponse?>>();
+        foreach (var scenario in SearchScenario.GetScenarios())
         {
-            var searchTasks = new List<Task<SearchResponse>>();
-            foreach (var scenario in SearchScenario.GetScenarios())
-            {
-                var request = scenario.SearchRequest;
-                request.DisplayName = scenario.Name;
-                request.Query = query;
-                searchTasks.Add(this.searchService.SearchAsync(request));
-            }
-            await Task.WhenAll(searchTasks);
-            this.SearchResponses = searchTasks.Select(t => t.Result).ToList();
-            this.Query = query;
+            scenario.SearchRequest.DisplayName = scenario.Name;
+            scenario.SearchRequest.Query = this.Query;
+            searchTasks.Add(this.searchService.SearchAsync(scenario.SearchRequest));
         }
+        await Task.WhenAll(searchTasks);
+        this.SearchResponses = searchTasks.Select(t => t.Result).Where(r => r != null).Cast<SearchResponse>().ToList();
     }
 }

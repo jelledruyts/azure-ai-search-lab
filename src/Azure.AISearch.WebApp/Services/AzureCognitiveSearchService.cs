@@ -45,12 +45,12 @@ public class AzureCognitiveSearchService
 
         var searchOptions = new SearchOptions
         {
-            QueryType = request.TextQueryType == TextQueryType.Semantic ? SearchQueryType.Semantic : SearchQueryType.Simple,
+            QueryType = request.IsSemanticSearch ? SearchQueryType.Semantic : SearchQueryType.Simple,
             HighlightPreTag = "<mark>",
             HighlightPostTag = "</mark>"
         };
 
-        if (request.TextQueryType == TextQueryType.Semantic)
+        if (request.IsSemanticSearch)
         {
             searchOptions.SemanticConfigurationName = Constants.ConfigurationNames.SemanticConfigurationNameDefault;
             searchOptions.QueryLanguage = QueryLanguage.EnUs;

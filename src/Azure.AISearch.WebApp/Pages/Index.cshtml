@@ -8,96 +8,95 @@
 
 <form method="post" class="mb-3">
 
-    <div class="mb-2">
-        <label class="form-label">Primary Service</label>
-        <div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureCognitiveSearch" value="@PrimaryServiceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureCognitiveSearch)">
-                <label class="form-check-label" for="searchRequest-PrimaryService-AzureCognitiveSearch">Azure Cognitive Search</label>
+    <div class="card mb-3">
+        <div class="card-header">Options</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Primary Service</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureCognitiveSearch" value="@PrimaryServiceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureCognitiveSearch)">
+                        <label class="form-check-label" for="searchRequest-PrimaryService-AzureCognitiveSearch">Azure Cognitive Search</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureOpenAI" value="@PrimaryServiceType.AzureOpenAI" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureOpenAI)">
+                        <label class="form-check-label" for="searchRequest-PrimaryService-AzureOpenAI">Azure OpenAI</label>
+                    </div>
+                </div>
             </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureOpenAI" value="@PrimaryServiceType.AzureOpenAI" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureOpenAI)">
-                <label class="form-check-label" for="searchRequest-PrimaryService-AzureOpenAI">Azure OpenAI</label>
+
+            <div class="mb-2">
+                <label class="form-label">Search Index</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobDocuments" value="@Constants.IndexNames.BlobDocuments" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobDocuments)">
+                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobDocuments">Documents</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobChunks" value="@Constants.IndexNames.BlobChunks" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobChunks)">
+                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobChunks">Chunks</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label">Query Type</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-TextStandard" value="@QueryType.TextStandard" checked="@(Model.SearchRequest.QueryType == QueryType.TextStandard)">
+                        <label class="form-check-label" for="searchRequest-QueryType-TextStandard">Standard text</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-TextSemantic" value="@QueryType.TextSemantic" checked="@(Model.SearchRequest.QueryType == QueryType.TextSemantic)">
+                        <label class="form-check-label" for="searchRequest-QueryType-TextSemantic">Semantic text</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" checked="@(Model.SearchRequest.QueryType == QueryType.Vector)">
+                        <label class="form-check-label" for="searchRequest-QueryType-Vector">Vector only</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridStandard" value="@QueryType.HybridStandard" checked="@(Model.SearchRequest.QueryType == QueryType.HybridStandard)">
+                        <label class="form-check-label" for="searchRequest-QueryType-HybridStandard">Standard hybrid (text + vector)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" checked="@(Model.SearchRequest.QueryType == QueryType.HybridSemantic)">
+                        <label class="form-check-label" for="searchRequest-QueryType-HybridSemantic">Semantic hybrid (text + vector)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label">Data Source (&quot;On Your Data&quot;)</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-None" value="@DataSourceType.None" checked="@(Model.SearchRequest.DataSource == DataSourceType.None)">
+                        <label class="form-check-label" for="searchRequest-DataSource-None">None</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-AzureCognitiveSearch" value="@DataSourceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.DataSource == DataSourceType.AzureCognitiveSearch)">
+                        <label class="form-check-label" for="searchRequest-DataSource-AzureCognitiveSearch">Azure Cognitive Search</label>
+                    </div>
+                    <div class="form-check form-check-inline form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.LimitToDataSource)" id="searchRequest-LimitToDataSource" checked="@Model.SearchRequest.LimitToDataSource" value="true">
+                        <input type="hidden" name="@nameof(SearchRequest.LimitToDataSource)" value="false" />
+                        <label class="form-check-label" for="searchRequest-LimitToDataSource">Limit to your data</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label" for="searchRequest-SystemRoleInformation">System role information</label>
+                <input type="text" class="form-control" name="@nameof(SearchRequest.SystemRoleInformation)" id="searchRequest-SystemRoleInformation" value="@Model.SearchRequest.SystemRoleInformation">
             </div>
         </div>
     </div>
 
-    <div class="mb-2">
-        <label class="form-label">Search Index</label>
-        <div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobDocuments" value="@Constants.IndexNames.BlobDocuments" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobDocuments)">
-                <label class="form-check-label" for="searchRequest-SearchIndexName-BlobDocuments">Documents</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobChunks" value="@Constants.IndexNames.BlobChunks" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobChunks)">
-                <label class="form-check-label" for="searchRequest-SearchIndexName-BlobChunks">Chunks</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-2">
-        <label class="form-label">Query Type</label>
-        <div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Text" value="@QueryType.Text" checked="@(Model.SearchRequest.QueryType == QueryType.Text)">
-                <label class="form-check-label" for="searchRequest-QueryType-Text">Text</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" checked="@(Model.SearchRequest.QueryType == QueryType.Vector)">
-                <label class="form-check-label" for="searchRequest-QueryType-Vector">Vector only</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Hybrid" value="@QueryType.Hybrid" checked="@(Model.SearchRequest.QueryType == QueryType.Hybrid)">
-                <label class="form-check-label" for="searchRequest-QueryType-Hybrid">Hybrid (text + vector)</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-2">
-        <label class="form-label">Text Query Type</label>
-        <div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.TextQueryType)" id="searchRequest-TextQueryType-Standard" value="@TextQueryType.Standard" checked="@(Model.SearchRequest.TextQueryType == TextQueryType.Standard)">
-                <label class="form-check-label" for="searchRequest-TextQueryType-Standard">Standard</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.TextQueryType)" id="searchRequest-TextQueryType-Semantic" value="@TextQueryType.Semantic" checked="@(Model.SearchRequest.TextQueryType == TextQueryType.Semantic)">
-                <label class="form-check-label" for="searchRequest-TextQueryType-Semantic">Semantic</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-2">
-        <label class="form-label">Data Source</label>
-        <div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-None" value="@DataSourceType.None" checked="@(Model.SearchRequest.DataSource == DataSourceType.None)">
-                <label class="form-check-label" for="searchRequest-DataSource-None">None</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-AzureCognitiveSearch" value="@DataSourceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.DataSource == DataSourceType.AzureCognitiveSearch)">
-                <label class="form-check-label" for="searchRequest-DataSource-AzureCognitiveSearch">Azure Cognitive Search (&quot;On Your Data&quot;)</label>
-            </div>
-            <div class="form-check form-check-inline form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.LimitToDataSource)" id="searchRequest-LimitToDataSource" checked="@Model.SearchRequest.LimitToDataSource" value="true">
-                <input type="hidden" name="@nameof(SearchRequest.LimitToDataSource)" value="false" />
-                <label class="form-check-label" for="searchRequest-LimitToDataSource">Limit to your data</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-2">
-        <label class="form-label" for="searchRequest-SystemRoleInformation">System role information</label>
-        <input type="text" class="form-control" name="@nameof(SearchRequest.SystemRoleInformation)" id="searchRequest-SystemRoleInformation" value="@Model.SearchRequest.SystemRoleInformation">
-    </div>
-
-    @if (Model.SearchRequest?.History != null && Model.SearchRequest.History.Any())
+    @if (Model.SearchResponse?.History != null && Model.SearchResponse.History.Any())
     {
         <div class="message-list mb-4">
-            @foreach (var item in Model.SearchRequest.History)
+            @foreach (var item in Model.SearchResponse.History)
             {
-                var cssClass = Model.SearchRequest.History.IndexOf(item) % 2 == 0 ? "border-primary-subtle float-end text-end" : "border-info float-start";
+                var cssClass = Model.SearchResponse.History.IndexOf(item) % 2 == 0 ? "border-primary-subtle float-end text-end" : "border-info float-start";
 
                 <input type="hidden" name="history[]" value="@item" />
                 <div class="message-list-item mt-3 p-2 w-75 border rounded search-answer @cssClass">@Html.Raw(item)</div>
@@ -105,8 +104,15 @@
             }
         </div>
     }
+    else
+    {
+        if (!string.IsNullOrWhiteSpace(Model.SearchRequest.Query))
+        {
+            <h3 class="mb-3">Search results for <code>@Model.SearchRequest.Query</code></h3>
+        }
+    }
 
-    <div class="input-group mt-3">
+    <div class="input-group">
         <input type="text" class="form-control border-primary" placeholder="Search or ask anything" name="@nameof(SearchRequest.Query)" />
         <button class="btn btn-outline-primary" type="submit"><i class="bi bi-send"></i> Send</button>
     </div>

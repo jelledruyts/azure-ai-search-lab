@@ -15,11 +15,15 @@ public class SearchService
         this.azureOpenAISearchService = azureOpenAISearchService;
     }
 
-    public async Task<SearchResponse> SearchAsync(SearchRequest request)
+    public async Task<SearchResponse?> SearchAsync(SearchRequest request)
     {
         try
         {
-            if (request.PrimaryService == PrimaryServiceType.AzureCognitiveSearch)
+            if (string.IsNullOrWhiteSpace(request.Query))
+            {
+                return null;
+            }
+            else if (request.PrimaryService == PrimaryServiceType.AzureCognitiveSearch)
             {
                 return await this.azureCognitiveSearchService.SearchAsync(request);
             }

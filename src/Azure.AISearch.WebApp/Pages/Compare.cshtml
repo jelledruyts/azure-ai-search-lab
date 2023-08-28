@@ -16,6 +16,7 @@
 @if (Model.SearchResponses != null && Model.SearchResponses.Any())
 {
     var selectedSearchResponse = Model.SearchResponses.First();
+    <h3 class="mb-3">Search results for <code>@Model.Query</code></h3>
     <ul class="nav nav-tabs" role="tablist">
         @foreach (var searchResponse in Model.SearchResponses)
         {

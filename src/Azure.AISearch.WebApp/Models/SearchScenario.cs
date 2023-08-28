@@ -22,8 +22,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureCognitiveSearch,
                     SearchIndexName = Constants.IndexNames.BlobDocuments,
-                    QueryType = QueryType.Text,
-                    TextQueryType = TextQueryType.Standard
+                    QueryType = QueryType.TextStandard
                 }
             },
             new SearchScenario
@@ -36,8 +35,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureCognitiveSearch,
                     SearchIndexName = Constants.IndexNames.BlobDocuments,
-                    QueryType = QueryType.Text,
-                    TextQueryType = TextQueryType.Semantic
+                    QueryType = QueryType.TextSemantic
                 }
             },
             new SearchScenario
@@ -50,8 +48,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureCognitiveSearch,
                     SearchIndexName = Constants.IndexNames.BlobChunks,
-                    QueryType = QueryType.Text,
-                    TextQueryType = TextQueryType.Standard
+                    QueryType = QueryType.TextStandard
                 }
             },
             new SearchScenario
@@ -64,8 +61,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureCognitiveSearch,
                     SearchIndexName = Constants.IndexNames.BlobChunks,
-                    QueryType = QueryType.Text,
-                    TextQueryType = TextQueryType.Semantic
+                    QueryType = QueryType.TextSemantic
                 }
             },
             new SearchScenario
@@ -91,8 +87,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureCognitiveSearch,
                     SearchIndexName = Constants.IndexNames.BlobChunks,
-                    QueryType = QueryType.Hybrid,
-                    TextQueryType = TextQueryType.Standard
+                    QueryType = QueryType.HybridStandard
                 }
             },
             new SearchScenario
@@ -105,8 +100,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureCognitiveSearch,
                     SearchIndexName = Constants.IndexNames.BlobChunks,
-                    QueryType = QueryType.Hybrid,
-                    TextQueryType = TextQueryType.Semantic
+                    QueryType = QueryType.HybridSemantic
                 }
             },
             new SearchScenario
@@ -130,8 +124,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureOpenAI,
                     SearchIndexName = Constants.IndexNames.BlobChunks, // As a built-in scenario, always use the chunks index for best results
-                    QueryType = QueryType.Text,
-                    TextQueryType = TextQueryType.Standard,
+                    QueryType = QueryType.TextStandard,
                     DataSource = DataSourceType.AzureCognitiveSearch,
                     LimitToDataSource = true
                 }

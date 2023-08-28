@@ -2,7 +2,9 @@ namespace Azure.AISearch.WebApp.Models;
 
 public enum QueryType
 {
-    Text,
+    TextStandard,
+    TextSemantic,
     Vector,
-    Hybrid
+    HybridStandard,
+    HybridSemantic
 }
