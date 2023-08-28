@@ -6,19 +6,20 @@ namespace Azure.AISearch.WebApp.Pages;
 
 public class IndexModel : PageModel
 {
-    private readonly SearchService searchService;
+    private readonly SearchRequestHandler searchRequestHandler;
+
     public SearchRequest SearchRequest { get; set; }
     public SearchResponse? SearchResponse { get; set; }
 
-    public IndexModel(SearchService searchService)
+    public IndexModel(SearchRequestHandler searchRequestHandler)
     {
-        this.searchService = searchService;
+        this.searchRequestHandler = searchRequestHandler;
         this.SearchRequest = new SearchRequest();
     }
 
     public async Task OnPost(SearchRequest searchRequest)
     {
         this.SearchRequest = searchRequest;
-        this.SearchResponse = await this.searchService.SearchAsync(this.SearchRequest);
+        this.SearchResponse = await this.searchRequestHandler.HandleSearchRequestAsync(this.SearchRequest);
     }
 }

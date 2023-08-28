@@ -3,7 +3,7 @@ using Azure.AISearch.WebApp.Models;
 
 namespace Azure.AISearch.WebApp.Services;
 
-public class AzureOpenAISearchService
+public class AzureOpenAISearchService : ISearchService
 {
     private readonly AppSettings settings;
     private readonly IHttpClientFactory httpClientFactory;
@@ -14,16 +14,16 @@ public class AzureOpenAISearchService
         this.httpClientFactory = httpClientFactory;
     }
 
-    public async Task<SearchResponse> SearchAsync(SearchRequest request)
+    public async Task<SearchResponse?> SearchAsync(SearchRequest request)
     {
+        if (request.PrimaryService != PrimaryServiceType.AzureOpenAI)
+        {
+            return null;
+        }
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
         ArgumentNullException.ThrowIfNull(request.Query);
-        var searchResponse = new SearchResponse
-        {
-            RequestId = request.Id,
-            DisplayName = request.DisplayName
-        };
 
+        var searchResponse = new SearchResponse(request);
         var messages = new List<ChatRequestMessage>();
         messages.Add(new ChatRequestMessage { Role = Constants.ChatRoles.System, Content = request.SystemRoleInformation });
         if (request.History != null && request.History.Any())

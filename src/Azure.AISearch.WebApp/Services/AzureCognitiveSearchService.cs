@@ -4,7 +4,7 @@ using Azure.Search.Documents.Models;
 
 namespace Azure.AISearch.WebApp.Services;
 
-public class AzureCognitiveSearchService
+public class AzureCognitiveSearchService : ISearchService
 {
     private readonly AppSettings settings;
     private readonly Uri searchServiceUrl;
@@ -21,13 +21,13 @@ public class AzureCognitiveSearchService
         this.searchServiceAdminCredential = new AzureKeyCredential(this.settings.SearchServiceAdminKey);
     }
 
-    public async Task<SearchResponse> SearchAsync(SearchRequest request)
+    public async Task<SearchResponse?> SearchAsync(SearchRequest request)
     {
-        var response = new SearchResponse
+        if (request.PrimaryService != PrimaryServiceType.AzureCognitiveSearch)
         {
-            RequestId = request.Id,
-            DisplayName = request.DisplayName
-        };
+            return null;
+        }
+        var response = new SearchResponse(request);
         var useDocumentsIndex = true;
         if (request.SearchIndexName == Constants.IndexNames.BlobDocuments)
         {

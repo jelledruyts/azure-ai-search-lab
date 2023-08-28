@@ -16,12 +16,12 @@ builder.Services.AddHttpClient();
 var appSettings = new AppSettings();
 builder.Configuration.Bind(appSettings);
 builder.Services.AddSingleton(appSettings);
-builder.Services.AddSingleton<IEmbeddingService, AzureOpenAIEmbeddingService>();
-builder.Services.AddSingleton<SearchService>();
-builder.Services.AddSingleton<AzureCognitiveSearchService>();
-builder.Services.AddSingleton<AzureOpenAISearchService>();
 builder.Services.AddSingleton<AzureCognitiveSearchConfigurationService>();
 builder.Services.AddSingleton<AzureStorageConfigurationService>();
+builder.Services.AddSingleton<IEmbeddingService, AzureOpenAIEmbeddingService>();
+builder.Services.AddSingleton<ISearchService, AzureCognitiveSearchService>();
+builder.Services.AddSingleton<ISearchService, AzureOpenAISearchService>();
+builder.Services.AddSingleton<SearchRequestHandler>();
 
 // Asynchronously initialize the application on startup.
 builder.Services.AddHostedService<AppInitializationHostedService>();

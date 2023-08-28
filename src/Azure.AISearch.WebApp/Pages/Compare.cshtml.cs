@@ -6,14 +6,14 @@ namespace Azure.AISearch.WebApp.Pages;
 
 public class CompareModel : PageModel
 {
-    private readonly SearchService searchService;
+    private readonly SearchRequestHandler searchRequestHandler;
 
     public string? Query { get; set; }
     public IList<SearchResponse>? SearchResponses { get; set; }
 
-    public CompareModel(SearchService searchService)
+    public CompareModel(SearchRequestHandler searchRequestHandler)
     {
-        this.searchService = searchService;
+        this.searchRequestHandler = searchRequestHandler;
     }
 
     public async Task OnPost(string query)
@@ -24,7 +24,7 @@ public class CompareModel : PageModel
         {
             scenario.SearchRequest.DisplayName = scenario.Name;
             scenario.SearchRequest.Query = this.Query;
-            searchTasks.Add(this.searchService.SearchAsync(scenario.SearchRequest));
+            searchTasks.Add(this.searchRequestHandler.HandleSearchRequestAsync(scenario.SearchRequest));
         }
         await Task.WhenAll(searchTasks);
         this.SearchResponses = searchTasks.Select(t => t.Result).Where(r => r != null).Cast<SearchResponse>().ToList();
