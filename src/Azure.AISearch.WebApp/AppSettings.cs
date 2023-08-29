@@ -12,4 +12,5 @@ public class AppSettings
     public string? TextEmbedderFunctionApiKey { get; set; }
     public string? SearchServiceUrl { get; set; }
     public string? SearchServiceAdminKey { get; set; }
+    public string? InitialDocumentUrls { get; set; }
 }

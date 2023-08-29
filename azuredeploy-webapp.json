@@ -3,7 +3,8 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "resourcePrefix": {
-            "type": "String"
+            "type": "String",
+            "minLength": 1
         },
         "embeddingModelName": {
             "type": "String",
@@ -24,6 +25,10 @@
             "type": "String",
             "minLength": 1,
             "defaultValue": "0301"
+        },
+        "initialDocumentUrls": {
+            "type": "String",
+            "defaultValue": "https://azure.microsoft.com/mediahandler/files/resourcefiles/resilience-in-azure-whitepaper/Resiliency-whitepaper.pdf https://azure.microsoft.com/mediahandler/files/resourcefiles/data-residency-data-sovereignty-and-compliance-in-the-microsoft-cloud/Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf"
         }
     },
     "variables": {
@@ -320,6 +325,10 @@
                         {
                             "name": "SearchServiceAdminKey",
                             "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2022-09-01').primaryKey]"
+                        },
+                        {
+                            "name": "InitialDocumentUrls",
+                            "value": "[parameters('initialDocumentUrls')]"
                         }
                     ]
                 }
@@ -366,6 +375,10 @@
         "searchServiceAdminKey": {
             "type": "string",
             "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2022-09-01').primaryKey]"
+        },
+        "initialDocumentUrls": {
+            "type": "string",
+            "value": "[parameters('initialDocumentUrls')]"
         },
         "webAppUrl": {
             "type": "string",

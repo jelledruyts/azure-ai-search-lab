@@ -13,12 +13,11 @@ public class AppInitializationHostedService : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // Create the Azure Storage containers if they don't already exist.
-        await this.azureStorageConfigurationService.CreateContainerIfNotExistsAsync(Constants.ContainerNames.BlobDocuments);
-        await this.azureStorageConfigurationService.CreateContainerIfNotExistsAsync(Constants.ContainerNames.BlobChunks);
+        // Initialize the Azure Storage service.
+        await this.azureStorageConfigurationService.InitializeAsync(Constants.ContainerNames.BlobDocuments, Constants.ContainerNames.BlobChunks);
 
         // Initialize the Azure Cognitive Search indexes, datasources, skillsets and indexers.
-        await this.azureSearchConfigurationService.InitializeSearchAsync(Constants.IndexNames.BlobDocuments, Constants.IndexNames.BlobChunks, Constants.ContainerNames.BlobDocuments, Constants.ContainerNames.BlobChunks);
+        await this.azureSearchConfigurationService.InitializeAsync(Constants.IndexNames.BlobDocuments, Constants.IndexNames.BlobChunks, Constants.ContainerNames.BlobDocuments, Constants.ContainerNames.BlobChunks);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

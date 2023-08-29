@@ -20,7 +20,7 @@ public class AzureCognitiveSearchConfigurationService
         this.searchServiceAdminCredential = new AzureKeyCredential(this.settings.SearchServiceAdminKey);
     }
 
-    public async Task InitializeSearchAsync(string documentsIndexName, string chunksIndexName, string documentsContainerName, string chunksContainerName)
+    public async Task InitializeAsync(string documentsIndexName, string chunksIndexName, string documentsContainerName, string chunksContainerName)
     {
         var indexClient = new SearchIndexClient(this.searchServiceUrl, searchServiceAdminCredential);
         var indexerClient = new SearchIndexerClient(this.searchServiceUrl, searchServiceAdminCredential);
