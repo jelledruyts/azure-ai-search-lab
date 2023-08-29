@@ -8,11 +8,26 @@ public class AzureOpenAISearchService : ISearchService
 {
     private readonly AppSettings settings;
     private readonly IHttpClientFactory httpClientFactory;
+    private readonly Uri chatCompletionUrl;
+    private readonly Uri extensionChatCompletionUrl;
+    private readonly Uri embeddingsUrl;
 
-    public AzureOpenAISearchService(AppSettings options, IHttpClientFactory httpClientFactory)
+    public AzureOpenAISearchService(AppSettings settings, IHttpClientFactory httpClientFactory)
     {
-        this.settings = options;
+        ArgumentNullException.ThrowIfNull(settings.OpenAIEndpoint);
+        ArgumentNullException.ThrowIfNull(settings.OpenAIGptDeployment);
+        ArgumentNullException.ThrowIfNull(settings.OpenAIEmbeddingDeployment);
+        this.settings = settings;
         this.httpClientFactory = httpClientFactory;
+        var baseUrl = new Uri(this.settings.OpenAIEndpoint);
+        this.chatCompletionUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIGptDeployment, "chat/completions");
+        this.extensionChatCompletionUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIGptDeployment, "extensions/chat/completions");
+        this.embeddingsUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIEmbeddingDeployment, "embeddings");
+    }
+
+    private Uri GetAzureOpenAIUrl(Uri baseUrl, string deploymentName, string path)
+    {
+        return new Uri(baseUrl, $"openai/deployments/{deploymentName}/{path}?api-version=2023-06-01-preview");
     }
 
     public async Task<SearchResponse?> SearchAsync(SearchRequest request)
@@ -21,7 +36,6 @@ public class AzureOpenAISearchService : ISearchService
         {
             return null;
         }
-        ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
         ArgumentNullException.ThrowIfNull(request.Query);
 
         var searchResponse = new SearchResponse(request);
@@ -44,21 +58,19 @@ public class AzureOpenAISearchService : ISearchService
             Messages = messages
         };
 
-        var chatGptUrl = new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIGptDeployment}/chat/completions?api-version=2023-06-01-preview");
-        var serviceRequestUrl = chatGptUrl;
         if (request.DataSource == DataSourceType.AzureCognitiveSearch)
         {
-            serviceRequestUrl = new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIGptDeployment}/extensions/chat/completions?api-version=2023-06-01-preview");
             serviceRequest.DataSources = new[] { GetAzureCognitiveSearchDataSource(request) };
         }
 
         var httpClient = this.httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("api-key", this.settings.OpenAIApiKey);
-        httpClient.DefaultRequestHeaders.Add("chatgpt_url", chatGptUrl.ToString());
+        httpClient.DefaultRequestHeaders.Add("chatgpt_url", this.chatCompletionUrl.ToString());
         httpClient.DefaultRequestHeaders.Add("chatgpt_key", this.settings.OpenAIApiKey);
         // NOTE: PostAsJsonAsync doesn't work for some reason and only for OpenAI "On Your Data",
         // where it results in HTTP 500 "Response payload is not completed".
         // var serviceResponseMessage = await httpClient.PostAsJsonAsync(serviceRequestUrl, serviceRequest);
+        var serviceRequestUrl = request.DataSource == DataSourceType.None ? this.chatCompletionUrl : this.extensionChatCompletionUrl;
         var serviceResponseMessage = await httpClient.PostAsync(serviceRequestUrl, new StringContent(JsonSerializer.Serialize(serviceRequest, JsonConfiguration.DefaultJsonOptions), System.Text.Encoding.UTF8, "application/json"));
         if (!serviceResponseMessage.IsSuccessStatusCode)
         {
@@ -126,12 +138,15 @@ public class AzureOpenAISearchService : ISearchService
                     ContentFields = new[] { nameof(DocumentChunk.Content) },
                     TitleField = nameof(DocumentChunk.SourceDocumentTitle),
                     UrlField = nameof(DocumentChunk.SourceDocumentFilePath),
-                    FilepathField = nameof(DocumentChunk.SourceDocumentFilePath)
+                    FilepathField = nameof(DocumentChunk.SourceDocumentFilePath),
+                    VectorFields = new[] { nameof(DocumentChunk.ContentVector) }
                 },
                 InScope = request.LimitToDataSource, // Limit responses to data from the data source only
                 QueryType = GetQueryType(request),
                 SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
-                RoleInformation = request.SystemRoleInformation
+                RoleInformation = request.SystemRoleInformation,
+                EmbeddingEndpoint = request.IsVectorSearch ? this.embeddingsUrl.ToString() : null,
+                EmbeddingKey = request.IsVectorSearch ? this.settings.OpenAIApiKey : null
             }
         };
     }

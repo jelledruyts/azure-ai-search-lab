@@ -76,7 +76,7 @@ public class AzureCognitiveSearchParameters
     public string? RoleInformation { get; set; }
 
     [JsonPropertyName("filter")]
-    public string? Filter { get; set; }
+    public string? Filter { get; set; } // Filter pattern for security trimming, see https://learn.microsoft.com/azure/ai-services/openai/concepts/use-your-data#document-level-access-control.
 
     [JsonPropertyName("embeddingEndpoint")]
     public string? EmbeddingEndpoint { get; set; }
