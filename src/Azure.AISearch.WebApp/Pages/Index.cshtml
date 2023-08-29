@@ -3,7 +3,28 @@
 @{
     ViewData["Title"] = "Search";
 }
+@section Scripts {
+    <script>
+        const { createApp, ref, watch } = Vue
+        createApp({
+            setup() {
+                const scenarios = ref(@Html.Raw(JsonSerializer.Serialize(Model.Scenarios, JsonConfiguration.DefaultJsonOptions)))
+                const selectedScenario = ref(null)
+                const searchRequest = ref(@Html.Raw(JsonSerializer.Serialize(Model.SearchRequest, JsonConfiguration.DefaultJsonOptions)))
 
+                watch(selectedScenario, (newScenario) => {
+                    if (newScenario) {
+                        searchRequest.value = newScenario.searchRequest;
+                    }
+                })
+
+                return {
+                    scenarios, selectedScenario, searchRequest
+                }
+            }
+        }).mount('#app')
+    </script>
+}
 <h2 class="display-6 mb-3">Search</h2>
 
 <form method="post" class="mb-3">
@@ -12,81 +33,91 @@
         <div class="card-header">Options</div>
         <div class="card-body">
             <div class="mb-2">
-                <label class="form-label">Primary Service</label>
+                <label class="form-label">Predefined scenario</label>
+                <div class="form-group">
+                    <select class="form-select" v-model="selectedScenario">
+                        <option v-bind:value="null">None</option>
+                        <option v-for="scenario in scenarios" v-bind:value="scenario">{{ scenario.name }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label">Primary service</label>
                 <div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureCognitiveSearch" value="@PrimaryServiceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureCognitiveSearch)">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureCognitiveSearch" value="@PrimaryServiceType.AzureCognitiveSearch" v-model="searchRequest.primaryService">
                         <label class="form-check-label" for="searchRequest-PrimaryService-AzureCognitiveSearch">Azure Cognitive Search</label>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureOpenAI" value="@PrimaryServiceType.AzureOpenAI" checked="@(Model.SearchRequest.PrimaryService == PrimaryServiceType.AzureOpenAI)">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.PrimaryService)" id="searchRequest-PrimaryService-AzureOpenAI" value="@PrimaryServiceType.AzureOpenAI" v-model="searchRequest.primaryService">
                         <label class="form-check-label" for="searchRequest-PrimaryService-AzureOpenAI">Azure OpenAI</label>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-2">
-                <label class="form-label">Search Index</label>
-                <div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobDocuments" value="@Constants.IndexNames.BlobDocuments" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobDocuments)">
-                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobDocuments">Documents</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobChunks" value="@Constants.IndexNames.BlobChunks" checked="@(Model.SearchRequest.SearchIndexName == Constants.IndexNames.BlobChunks)">
-                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobChunks">Chunks</label>
-                    </div>
-                </div>
+            <div class="mb-2" v-if="searchRequest.primaryService == '@PrimaryServiceType.AzureOpenAI'">
+                <label class="form-label" for="searchRequest-SystemRoleInformation">System role information</label>
+                <input type="text" class="form-control" name="@nameof(SearchRequest.SystemRoleInformation)" id="searchRequest-SystemRoleInformation" v-model="searchRequest.systemRoleInformation">
             </div>
-
-            <div class="mb-2">
-                <label class="form-label">Query Type</label>
+            
+            <div class="mb-2" v-if="searchRequest.primaryService == '@PrimaryServiceType.AzureOpenAI'">
+                <label class="form-label">Data source (Azure OpenAI &quot;on your data&quot;)</label>
                 <div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-TextStandard" value="@QueryType.TextStandard" checked="@(Model.SearchRequest.QueryType == QueryType.TextStandard)">
-                        <label class="form-check-label" for="searchRequest-QueryType-TextStandard">Standard text</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-TextSemantic" value="@QueryType.TextSemantic" checked="@(Model.SearchRequest.QueryType == QueryType.TextSemantic)">
-                        <label class="form-check-label" for="searchRequest-QueryType-TextSemantic">Semantic text</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" checked="@(Model.SearchRequest.QueryType == QueryType.Vector)">
-                        <label class="form-check-label" for="searchRequest-QueryType-Vector">Vector only</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridStandard" value="@QueryType.HybridStandard" checked="@(Model.SearchRequest.QueryType == QueryType.HybridStandard)">
-                        <label class="form-check-label" for="searchRequest-QueryType-HybridStandard">Standard hybrid (text + vector)</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" checked="@(Model.SearchRequest.QueryType == QueryType.HybridSemantic)">
-                        <label class="form-check-label" for="searchRequest-QueryType-HybridSemantic">Semantic hybrid (text + vector)</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-2">
-                <label class="form-label">Data Source (&quot;On Your Data&quot;)</label>
-                <div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-None" value="@DataSourceType.None" checked="@(Model.SearchRequest.DataSource == DataSourceType.None)">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-None" value="@DataSourceType.None" v-model="searchRequest.dataSource">
                         <label class="form-check-label" for="searchRequest-DataSource-None">None</label>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-AzureCognitiveSearch" value="@DataSourceType.AzureCognitiveSearch" checked="@(Model.SearchRequest.DataSource == DataSourceType.AzureCognitiveSearch)">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.DataSource)" id="searchRequest-DataSource-AzureCognitiveSearch" value="@DataSourceType.AzureCognitiveSearch" v-model="searchRequest.dataSource">
                         <label class="form-check-label" for="searchRequest-DataSource-AzureCognitiveSearch">Azure Cognitive Search</label>
                     </div>
                     <div class="form-check form-check-inline form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.LimitToDataSource)" id="searchRequest-LimitToDataSource" checked="@Model.SearchRequest.LimitToDataSource" value="true">
+                        <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.LimitToDataSource)" id="searchRequest-LimitToDataSource" value="true" v-model="searchRequest.limitToDataSource" v-bind:disabled="searchRequest.dataSource == '@DataSourceType.None'">
                         <input type="hidden" name="@nameof(SearchRequest.LimitToDataSource)" value="false" />
                         <label class="form-check-label" for="searchRequest-LimitToDataSource">Limit to your data</label>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-2">
-                <label class="form-label" for="searchRequest-SystemRoleInformation">System role information</label>
-                <input type="text" class="form-control" name="@nameof(SearchRequest.SystemRoleInformation)" id="searchRequest-SystemRoleInformation" value="@Model.SearchRequest.SystemRoleInformation">
+            <div class="mb-2" v-if="!(searchRequest.primaryService == '@PrimaryServiceType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.None')">
+                <label class="form-label">Search index</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobDocuments" value="@Constants.IndexNames.BlobDocuments" v-model="searchRequest.searchIndexName">
+                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobDocuments">Documents</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobChunks" value="@Constants.IndexNames.BlobChunks" v-model="searchRequest.searchIndexName">
+                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobChunks">Chunks</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2" v-if="!(searchRequest.primaryService == '@PrimaryServiceType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.None')">
+                <label class="form-label">Query type</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-TextStandard" value="@QueryType.TextStandard" v-model="searchRequest.queryType">
+                        <label class="form-check-label" for="searchRequest-QueryType-TextStandard">Standard text</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-TextSemantic" value="@QueryType.TextSemantic" v-model="searchRequest.queryType">
+                        <label class="form-check-label" for="searchRequest-QueryType-TextSemantic">Semantic text</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndexName == '@Constants.IndexNames.BlobDocuments'">
+                        <label class="form-check-label" for="searchRequest-QueryType-Vector">Vector only</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridStandard" value="@QueryType.HybridStandard" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndexName == '@Constants.IndexNames.BlobDocuments'">
+                        <label class="form-check-label" for="searchRequest-QueryType-HybridStandard">Standard hybrid (text + vector)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndexName == '@Constants.IndexNames.BlobDocuments'">
+                        <label class="form-check-label" for="searchRequest-QueryType-HybridSemantic">Semantic hybrid (text + vector)</label>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

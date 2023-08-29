@@ -124,7 +124,7 @@ public class SearchScenario
                 {
                     PrimaryService = PrimaryServiceType.AzureOpenAI,
                     SearchIndexName = Constants.IndexNames.BlobChunks, // As a built-in scenario, always use the chunks index for best results
-                    QueryType = QueryType.TextStandard,
+                    QueryType = QueryType.TextSemantic, // As a built-in scenario, always use semantic search for best results
                     DataSource = DataSourceType.AzureCognitiveSearch,
                     LimitToDataSource = true
                 }
