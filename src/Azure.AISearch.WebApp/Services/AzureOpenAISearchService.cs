@@ -125,6 +125,12 @@ public class AzureOpenAISearchService : ISearchService
 
     private DataSource GetAzureCognitiveSearchDataSource(SearchRequest request)
     {
+        if (request.SearchIndexName != Constants.IndexNames.BlobDocuments && request.SearchIndexName != Constants.IndexNames.BlobChunks)
+        {
+            // Cannot infer which shape the search results will have, so don't continue.
+            throw new NotSupportedException($"Search index \"{request.SearchIndexName}\" is not supported.");
+        }
+        var useDocumentsIndex = request.SearchIndexName == Constants.IndexNames.BlobDocuments;
         return new DataSource
         {
             Type = "AzureCognitiveSearch",
@@ -135,11 +141,11 @@ public class AzureOpenAISearchService : ISearchService
                 IndexName = request.SearchIndexName,
                 FieldsMapping = new AzureCognitiveSearchParametersFieldsMapping
                 {
-                    ContentFields = new[] { nameof(DocumentChunk.Content) },
-                    TitleField = nameof(DocumentChunk.SourceDocumentTitle),
-                    UrlField = nameof(DocumentChunk.SourceDocumentFilePath),
-                    FilepathField = nameof(DocumentChunk.SourceDocumentFilePath),
-                    VectorFields = new[] { nameof(DocumentChunk.ContentVector) }
+                    ContentFields = new[] { useDocumentsIndex ? nameof(Document.Content) : nameof(DocumentChunk.Content) },
+                    TitleField = useDocumentsIndex ? nameof(Document.Title) : nameof(DocumentChunk.SourceDocumentTitle),
+                    UrlField = useDocumentsIndex ? nameof(Document.FilePath) : nameof(DocumentChunk.SourceDocumentFilePath),
+                    FilepathField = useDocumentsIndex ? nameof(Document.FilePath) : nameof(DocumentChunk.SourceDocumentFilePath),
+                    VectorFields = useDocumentsIndex ? Array.Empty<string>() : new[] { nameof(DocumentChunk.ContentVector) }
                 },
                 InScope = request.LimitToDataSource, // Limit responses to data from the data source only
                 QueryType = GetQueryType(request),

@@ -27,21 +27,13 @@ public class AzureCognitiveSearchService : ISearchService
         {
             return null;
         }
-        var response = new SearchResponse(request);
-        var useDocumentsIndex = true;
-        if (request.SearchIndexName == Constants.IndexNames.BlobDocuments)
-        {
-            useDocumentsIndex = true;
-        }
-        else if (request.SearchIndexName == Constants.IndexNames.BlobChunks)
-        {
-            useDocumentsIndex = false;
-        }
-        else
+        if (request.SearchIndexName != Constants.IndexNames.BlobDocuments && request.SearchIndexName != Constants.IndexNames.BlobChunks)
         {
             // Cannot infer which shape the search results will have, so don't continue.
             throw new NotSupportedException($"Search index \"{request.SearchIndexName}\" is not supported.");
         }
+        var response = new SearchResponse(request);
+        var useDocumentsIndex = request.SearchIndexName == Constants.IndexNames.BlobDocuments;
 
         var searchOptions = new SearchOptions
         {
