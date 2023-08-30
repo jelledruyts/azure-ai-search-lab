@@ -38,7 +38,7 @@ public class AzureOpenAISearchService : ISearchService
         }
         ArgumentNullException.ThrowIfNull(request.Query);
 
-        var searchResponse = new SearchResponse(request);
+        var searchResponse = new SearchResponse();
         var messages = new List<ChatRequestMessage>();
         messages.Add(new ChatRequestMessage { Role = Constants.ChatRoles.System, Content = request.SystemRoleInformation });
         if (request.History != null && request.History.Any())

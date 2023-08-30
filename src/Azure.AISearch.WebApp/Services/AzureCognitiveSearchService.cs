@@ -32,7 +32,6 @@ public class AzureCognitiveSearchService : ISearchService
             // Cannot infer which shape the search results will have, so don't continue.
             throw new NotSupportedException($"Search index \"{request.SearchIndexName}\" is not supported.");
         }
-        var response = new SearchResponse(request);
         var useDocumentsIndex = request.SearchIndexName == Constants.IndexNames.BlobDocuments;
 
         var searchOptions = new SearchOptions
@@ -81,6 +80,7 @@ public class AzureCognitiveSearchService : ISearchService
 
         // Perform the search.
         var serviceResponse = await requestedSearchClient.SearchAsync<SearchDocument>(searchText, searchOptions);
+        var response = new SearchResponse();
         response.Answers = serviceResponse.Value.Answers == null ? Array.Empty<SearchAnswer>() : serviceResponse.Value.Answers.Select(a => new SearchAnswer { SearchIndexName = request.SearchIndexName, SearchIndexKey = a.Key, Score = a.Score, Text = string.IsNullOrWhiteSpace(a.Highlights) ? a.Text : a.Highlights }).ToList();
         response.Captions = serviceResponse.Value.Captions == null ? Array.Empty<string>() : serviceResponse.Value.Captions.Select(c => string.IsNullOrWhiteSpace(c.Highlights) ? c.Text : c.Highlights).ToList();
         foreach (var result in serviceResponse.Value.GetResults())

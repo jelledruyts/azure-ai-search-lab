@@ -2,8 +2,6 @@ namespace Azure.AISearch.WebApp.Models;
 
 public class SearchRequest
 {
-    public string Id { get; } = Guid.NewGuid().ToString();
-    public string? DisplayName { get; set; }
     public string? Query { get; set; }
     public IList<string> History { get; set; } = new List<string>();
     public EngineType Engine { get; set; } = EngineType.AzureCognitiveSearch;

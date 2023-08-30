@@ -24,7 +24,7 @@
         {
             var cssClass = searchResponse == selectedSearchResponse ? "active" : "";
             <li class="nav-item" role="presentation">
-                <button class="nav-link @cssClass" id="@searchResponse.RequestId-tab" data-bs-toggle="tab" data-bs-target="#@searchResponse.RequestId-tab-pane" type="button" role="tab" aria-controls="@searchResponse.RequestId-tab-pane" aria-selected="true">@searchResponse.DisplayName</button>
+                <button class="nav-link @cssClass" id="@searchResponse.Id-tab" data-bs-toggle="tab" data-bs-target="#@searchResponse.Id-tab-pane" type="button" role="tab" aria-controls="@searchResponse.Id-tab-pane" aria-selected="true">@searchResponse.DisplayName</button>
             </li>
         }
     </ul>
@@ -32,10 +32,15 @@
         @foreach (var searchResponse in Model.SearchResponses)
         {
             var cssClass = searchResponse == selectedSearchResponse ? "show active" : "";
-            <div class="tab-pane fade @cssClass" id="@searchResponse.RequestId-tab-pane" role="tabpanel" aria-labelledby="@searchResponse.RequestId-tab" tabindex="0">
+            <div class="tab-pane fade @cssClass" id="@searchResponse.Id-tab-pane" role="tabpanel" aria-labelledby="@searchResponse.Id-tab" tabindex="0">
+
+                @if (!string.IsNullOrWhiteSpace(searchResponse.Description))
+                {
+                    <div class="alert alert-primary my-2">@searchResponse.Description</div>
+                }
 
                 <partial name="_SearchResponse" model="searchResponse" />
-                
+
             </div>
         }
     </div>

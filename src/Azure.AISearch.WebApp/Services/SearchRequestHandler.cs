@@ -30,9 +30,9 @@ public class SearchRequestHandler
             }
             catch (Exception ex)
             {
-                return new SearchResponse(request, ex.Message);
+                return new SearchResponse { Error = ex.Message };
             }
         }
-        return new SearchResponse(request, "The search request couldn't be handled by any registered search service.");
+        return new SearchResponse { Error = "The search request couldn't be handled by any registered search service." };
     }
 }

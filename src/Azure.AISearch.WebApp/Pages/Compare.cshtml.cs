@@ -19,14 +19,21 @@ public class CompareModel : PageModel
     public async Task OnPost(string query)
     {
         this.Query = query;
-        var searchTasks = new List<Task<SearchResponse?>>();
-        foreach (var scenario in SearchScenario.GetScenarios())
+        var searchScenarioTasks = SearchScenario.GetScenarios().Select(s => RunScenarioAsync(s, query)).ToList();
+        await Task.WhenAll(searchScenarioTasks);
+        this.SearchResponses = searchScenarioTasks.Select(t => t.Result).Where(r => r != null).Cast<SearchResponse>().ToList();
+    }
+
+    private async Task<SearchResponse?> RunScenarioAsync(SearchScenario scenario, string query)
+    {
+        var searchRequest = scenario.SearchRequest;
+        searchRequest.Query = query;
+        var response = await this.searchRequestHandler.HandleSearchRequestAsync(searchRequest);
+        if (response != null)
         {
-            scenario.SearchRequest.DisplayName = scenario.Name;
-            scenario.SearchRequest.Query = this.Query;
-            searchTasks.Add(this.searchRequestHandler.HandleSearchRequestAsync(scenario.SearchRequest));
+            response.DisplayName = scenario.DisplayName;
+            response.Description = scenario.Description;
         }
-        await Task.WhenAll(searchTasks);
-        this.SearchResponses = searchTasks.Select(t => t.Result).Where(r => r != null).Cast<SearchResponse>().ToList();
+        return response;
     }
 }
