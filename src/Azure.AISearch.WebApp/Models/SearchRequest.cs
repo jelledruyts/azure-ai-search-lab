@@ -6,7 +6,7 @@ public class SearchRequest
     public string? DisplayName { get; set; }
     public string? Query { get; set; }
     public IList<string> History { get; set; } = new List<string>();
-    public PrimaryServiceType PrimaryService { get; set; } = PrimaryServiceType.AzureCognitiveSearch;
+    public EngineType Engine { get; set; } = EngineType.AzureCognitiveSearch;
     public string SearchIndexName { get; set; } = Constants.IndexNames.BlobDocuments;
     public QueryType QueryType { get; set; } = QueryType.TextStandard;
     public DataSourceType DataSource { get; set; } = DataSourceType.None;

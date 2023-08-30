@@ -23,7 +23,7 @@ public class AzureCognitiveSearchService : ISearchService
 
     public async Task<SearchResponse?> SearchAsync(SearchRequest request)
     {
-        if (request.PrimaryService != PrimaryServiceType.AzureCognitiveSearch)
+        if (request.Engine != EngineType.AzureCognitiveSearch)
         {
             return null;
         }

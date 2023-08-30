@@ -32,7 +32,7 @@ public class AzureOpenAISearchService : ISearchService
 
     public async Task<SearchResponse?> SearchAsync(SearchRequest request)
     {
-        if (request.PrimaryService != PrimaryServiceType.AzureOpenAI)
+        if (request.Engine != EngineType.AzureOpenAI)
         {
             return null;
         }
