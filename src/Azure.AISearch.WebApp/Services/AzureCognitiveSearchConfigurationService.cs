@@ -8,37 +8,108 @@ namespace Azure.AISearch.WebApp.Services;
 public class AzureCognitiveSearchConfigurationService
 {
     private readonly AppSettings settings;
-    private readonly Uri searchServiceUrl;
-    private readonly AzureKeyCredential searchServiceAdminCredential;
+    private readonly SearchIndexClient indexClient;
+    private readonly SearchIndexerClient indexerClient;
 
     public AzureCognitiveSearchConfigurationService(AppSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings.SearchServiceUrl);
         ArgumentNullException.ThrowIfNull(settings.SearchServiceAdminKey);
         this.settings = settings;
-        this.searchServiceUrl = new Uri(this.settings.SearchServiceUrl);
-        this.searchServiceAdminCredential = new AzureKeyCredential(this.settings.SearchServiceAdminKey);
+        var searchServiceUrl = new Uri(this.settings.SearchServiceUrl);
+        var searchServiceAdminCredential = new AzureKeyCredential(this.settings.SearchServiceAdminKey);
+        this.indexClient = new SearchIndexClient(searchServiceUrl, searchServiceAdminCredential);
+        this.indexerClient = new SearchIndexerClient(searchServiceUrl, searchServiceAdminCredential);
     }
 
-    public async Task InitializeAsync(string documentsIndexName, string chunksIndexName, string documentsContainerName, string chunksContainerName)
+    public async Task InitializeAsync()
     {
-        var indexClient = new SearchIndexClient(this.searchServiceUrl, searchServiceAdminCredential);
-        var indexerClient = new SearchIndexerClient(this.searchServiceUrl, searchServiceAdminCredential);
-        if (!await SearchIndexExistsAsync(indexClient, documentsIndexName))
+        ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobDocuments);
+        ArgumentNullException.ThrowIfNull(this.settings.StorageContainerNameBlobDocuments);
+        ArgumentNullException.ThrowIfNull(this.settings.StorageContainerNameBlobChunks);
+        ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobChunks);
+        if (!await SearchIndexExistsAsync(this.settings.SearchIndexNameBlobDocuments))
         {
-            await CreateDocumentsIndex(indexClient, indexerClient, documentsIndexName, documentsContainerName, chunksContainerName);
+            await CreateDocumentsIndex(this.settings.SearchIndexNameBlobDocuments, this.settings.StorageContainerNameBlobDocuments, this.settings.StorageContainerNameBlobChunks);
         }
-        if (!await SearchIndexExistsAsync(indexClient, chunksIndexName))
+        if (!await SearchIndexExistsAsync(this.settings.SearchIndexNameBlobChunks))
         {
-            await CreateChunksIndex(indexClient, indexerClient, chunksIndexName, chunksContainerName);
+            await CreateChunksIndex(this.settings.SearchIndexNameBlobChunks, this.settings.StorageContainerNameBlobChunks);
         }
     }
 
-    private static async Task<bool> SearchIndexExistsAsync(SearchIndexClient indexClient, string indexName)
+    public async Task UninitializeAsync()
+    {
+        ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobDocuments);
+        ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobChunks);
+        await this.indexerClient.DeleteIndexerAsync(GetIndexerName(this.settings.SearchIndexNameBlobDocuments));
+        await this.indexerClient.DeleteIndexerAsync(GetIndexerName(this.settings.SearchIndexNameBlobChunks));
+        await this.indexerClient.DeleteDataSourceConnectionAsync(GetDataSourceName(this.settings.SearchIndexNameBlobDocuments));
+        await this.indexerClient.DeleteDataSourceConnectionAsync(GetDataSourceName(this.settings.SearchIndexNameBlobChunks));
+        await this.indexerClient.DeleteSkillsetAsync(GetSkillsetName(this.settings.SearchIndexNameBlobDocuments));
+        await this.indexClient.DeleteIndexAsync(this.settings.SearchIndexNameBlobDocuments);
+        await this.indexClient.DeleteIndexAsync(this.settings.SearchIndexNameBlobChunks);
+    }
+
+    public async Task<IList<SearchIndexStatus>> GetSearchIndexStatusesAsync()
+    {
+        ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobDocuments);
+        ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobChunks);
+        return new List<SearchIndexStatus>
+        {
+            await GetSearchIndexStatusAsync(this.settings.SearchIndexNameBlobDocuments),
+            await GetSearchIndexStatusAsync(this.settings.SearchIndexNameBlobChunks)
+        };
+    }
+
+    public async Task RunSearchIndexerAsync(string indexName)
+    {
+        await this.indexerClient.RunIndexerAsync(GetIndexerName(indexName));
+    }
+
+    private async Task<SearchIndexStatus> GetSearchIndexStatusAsync(string indexName)
+    {
+        var searchIndex = new SearchIndexStatus
+        {
+            Name = indexName
+        };
+        var indexStatistics = await this.indexClient.GetIndexStatisticsAsync(indexName);
+        searchIndex.DocumentCount = indexStatistics.Value?.DocumentCount ?? 0;
+        var indexerStatus = await this.indexerClient.GetIndexerStatusAsync(GetIndexerName(indexName));
+        if (indexerStatus.Value?.LastResult == null)
+        {
+            searchIndex.IndexerStatus = "Never run";
+        }
+        else
+        {
+            searchIndex.IndexerStatus = GetIndexerStatus(indexerStatus.Value.LastResult.Status);
+            searchIndex.IndexerLastRunTime = indexerStatus.Value.LastResult.EndTime;
+        }
+        return searchIndex;
+    }
+
+    private static string GetIndexerStatus(IndexerExecutionStatus status)
+    {
+        switch (status)
+        {
+            case IndexerExecutionStatus.TransientFailure:
+                return "Transient failure";
+            case IndexerExecutionStatus.Success:
+                return "Succeeded";
+            case IndexerExecutionStatus.InProgress:
+                return "In progress";
+            case IndexerExecutionStatus.Reset:
+                return "Reset";
+            default:
+                return status.ToString();
+        }
+    }
+
+    private async Task<bool> SearchIndexExistsAsync(string indexName)
     {
         try
         {
-            await indexClient.GetIndexAsync(indexName);
+            await this.indexClient.GetIndexAsync(indexName);
             return true;
         }
         catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
@@ -47,23 +118,23 @@ public class AzureCognitiveSearchConfigurationService
         }
     }
 
-    private async Task CreateDocumentsIndex(SearchIndexClient indexClient, SearchIndexerClient indexerClient, string documentsIndexName, string documentsContainerName, string chunksContainerName)
+    private async Task CreateDocumentsIndex(string documentsIndexName, string documentsContainerName, string chunksContainerName)
     {
         // Create the search index for the documents.
         var documentsIndex = GetDocumentsSearchIndex(documentsIndexName);
-        await indexClient.CreateIndexAsync(documentsIndex);
+        await this.indexClient.CreateIndexAsync(documentsIndex);
 
         // Create the Blob Storage data source for the documents.
-        var documentsDataSourceConnection = new SearchIndexerDataSourceConnection($"{documentsIndexName}-datasource", SearchIndexerDataSourceType.AzureBlob, this.settings.StorageAccountConnectionString, new SearchIndexerDataContainer(documentsContainerName));
-        await indexerClient.CreateDataSourceConnectionAsync(documentsDataSourceConnection);
+        var documentsDataSourceConnection = new SearchIndexerDataSourceConnection(GetDataSourceName(documentsIndexName), SearchIndexerDataSourceType.AzureBlob, this.settings.StorageAccountConnectionString, new SearchIndexerDataContainer(documentsContainerName));
+        await this.indexerClient.CreateDataSourceConnectionAsync(documentsDataSourceConnection);
 
         // Create the skillset which chunks and vectorizes the document's content and stores it as JSON
         // files in blob storage (as a knowledge store) so it can be indexed separately.
         var skillset = GetDocumentsSearchIndexerSkillset(documentsIndexName, chunksContainerName);
-        await indexerClient.CreateSkillsetAsync(skillset);
+        await this.indexerClient.CreateSkillsetAsync(skillset);
 
         // Create the indexer.
-        var documentsIndexer = new SearchIndexer($"{documentsIndexName}-indexer", documentsDataSourceConnection.Name, documentsIndex.Name)
+        var documentsIndexer = new SearchIndexer(GetIndexerName(documentsIndexName), documentsDataSourceConnection.Name, documentsIndex.Name)
         {
             Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
             FieldMappings =
@@ -80,7 +151,7 @@ public class AzureCognitiveSearchConfigurationService
             // Use the skillset for chunking and embedding.
             SkillsetName = skillset.Name
         };
-        await indexerClient.CreateIndexerAsync(documentsIndexer);
+        await this.indexerClient.CreateIndexerAsync(documentsIndexer);
     }
 
     private static SearchIndex GetDocumentsSearchIndex(string documentsIndexName)
@@ -117,11 +188,11 @@ public class AzureCognitiveSearchConfigurationService
 
     private SearchIndexerSkillset GetDocumentsSearchIndexerSkillset(string indexName, string knowledgeStoreContainerName)
     {
-        return new SearchIndexerSkillset($"{indexName}-skillset", Array.Empty<SearchIndexerSkill>())
+        return new SearchIndexerSkillset(GetSkillsetName(indexName), Array.Empty<SearchIndexerSkill>())
         {
             Skills =
             {
-                new WebApiSkill(Array.Empty<InputFieldMappingEntry>(), Array.Empty<OutputFieldMappingEntry>(), settings.TextEmbedderFunctionEndpoint)
+                new WebApiSkill(Array.Empty<InputFieldMappingEntry>(), Array.Empty<OutputFieldMappingEntry>(), this.settings.TextEmbedderFunctionEndpoint)
                 {
                     Name = "chunking-embedding-skill",
                     Context = $"/document/{nameof(Document.Content)}",
@@ -131,7 +202,7 @@ public class AzureCognitiveSearchConfigurationService
                     DegreeOfParallelism = 1,
                     HttpHeaders =
                     {
-                        { "Authorization", settings.TextEmbedderFunctionApiKey }
+                        { "Authorization", this.settings.TextEmbedderFunctionApiKey }
                     },
                     Inputs =
                     {
@@ -153,7 +224,7 @@ public class AzureCognitiveSearchConfigurationService
                     }
                 }
             },
-            KnowledgeStore = new KnowledgeStore(settings.StorageAccountConnectionString, Array.Empty<KnowledgeStoreProjection>())
+            KnowledgeStore = new KnowledgeStore(this.settings.StorageAccountConnectionString, Array.Empty<KnowledgeStoreProjection>())
             {
                 Projections =
                 {
@@ -196,18 +267,18 @@ public class AzureCognitiveSearchConfigurationService
         };
     }
 
-    private async Task CreateChunksIndex(SearchIndexClient indexClient, SearchIndexerClient indexerClient, string chunksIndexName, string chunksContainerName)
+    private async Task CreateChunksIndex(string chunksIndexName, string chunksContainerName)
     {
         // Create the index which represents the chunked data from the main indexer's knowledge store.
         var chunkSearchIndex = GetChunksSearchIndex(chunksIndexName);
-        await indexClient.CreateIndexAsync(chunkSearchIndex);
+        await this.indexClient.CreateIndexAsync(chunkSearchIndex);
 
         // Create the Storage data source for the chunked data.
-        var chunksDataSourceConnection = new SearchIndexerDataSourceConnection($"{chunksIndexName}-datasource", SearchIndexerDataSourceType.AzureBlob, settings.StorageAccountConnectionString, new SearchIndexerDataContainer(chunksContainerName));
-        await indexerClient.CreateDataSourceConnectionAsync(chunksDataSourceConnection);
+        var chunksDataSourceConnection = new SearchIndexerDataSourceConnection(GetDataSourceName(chunksIndexName), SearchIndexerDataSourceType.AzureBlob, this.settings.StorageAccountConnectionString, new SearchIndexerDataContainer(chunksContainerName));
+        await this.indexerClient.CreateDataSourceConnectionAsync(chunksDataSourceConnection);
 
         // Create the chunk indexer based on the JSON files in the knowledge store.
-        var chunksIndexer = new SearchIndexer($"{chunksIndexName}-indexer", chunksDataSourceConnection.Name, chunkSearchIndex.Name)
+        var chunksIndexer = new SearchIndexer(GetIndexerName(chunksIndexName), chunksDataSourceConnection.Name, chunkSearchIndex.Name)
         {
             Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
             Parameters = new IndexingParameters()
@@ -218,10 +289,10 @@ public class AzureCognitiveSearchConfigurationService
                 }
             }
         };
-        await indexerClient.CreateIndexerAsync(chunksIndexer);
+        await this.indexerClient.CreateIndexerAsync(chunksIndexer);
     }
 
-    private static SearchIndex GetChunksSearchIndex(string chunkIndexName)
+    private SearchIndex GetChunksSearchIndex(string chunkIndexName)
     {
         return new SearchIndex(chunkIndexName)
         {
@@ -232,7 +303,7 @@ public class AzureCognitiveSearchConfigurationService
                 new SearchField(nameof(DocumentChunk.ChunkOffset), SearchFieldDataType.Int64) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.ChunkLength), SearchFieldDataType.Int64) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.Content), SearchFieldDataType.String) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.EnMicrosoft },
-                new SearchField(nameof(DocumentChunk.ContentVector), SearchFieldDataType.Collection(SearchFieldDataType.Single)) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, VectorSearchDimensions = Constants.VectorDimensions.TextEmbeddingAda002, VectorSearchConfiguration = Constants.ConfigurationNames.VectorSearchConfigurationNameDefault },
+                new SearchField(nameof(DocumentChunk.ContentVector), SearchFieldDataType.Collection(SearchFieldDataType.Single)) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, VectorSearchDimensions = this.settings.OpenAIEmbeddingVectorDimensions, VectorSearchConfiguration = Constants.ConfigurationNames.VectorSearchConfigurationNameDefault },
                 new SearchField(nameof(DocumentChunk.SourceDocumentId), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.SourceDocumentContentField), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.SourceDocumentTitle), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.EnMicrosoft },
@@ -276,5 +347,20 @@ public class AzureCognitiveSearchConfigurationService
                 }
             }
         };
+    }
+
+    private static string GetIndexerName(string indexName)
+    {
+        return $"{indexName}-indexer";
+    }
+
+    private static string GetDataSourceName(string indexName)
+    {
+        return $"{indexName}-datasource";
+    }
+
+    private static string GetSkillsetName(string indexName)
+    {
+        return $"{indexName}-skillset";
     }
 }

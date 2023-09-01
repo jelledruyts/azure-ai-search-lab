@@ -17,15 +17,17 @@ public class AzureStorageConfigurationService
         this.blobServiceClient = new BlobServiceClient(settings.StorageAccountConnectionString);
     }
 
-    public async Task InitializeAsync(string documentsContainerName, string chunksContainerName)
+    public async Task InitializeAsync()
     {
-        var documentsContainerWasJustCreated = await CreateContainerIfNotExistsAsync(documentsContainerName);
+        ArgumentNullException.ThrowIfNull(this.settings.StorageContainerNameBlobDocuments);
+        ArgumentNullException.ThrowIfNull(this.settings.StorageContainerNameBlobChunks);
+        var documentsContainerWasJustCreated = await CreateContainerIfNotExistsAsync(this.settings.StorageContainerNameBlobDocuments);
         if (documentsContainerWasJustCreated && !string.IsNullOrWhiteSpace(this.settings.InitialDocumentUrls))
         {
             // Upload initial documents to the container.
             this.logger.LogInformation($"Uploading initial documents to the storage container: {this.settings.InitialDocumentUrls}");
             var initialDocumentUrls = this.settings.InitialDocumentUrls.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var containerClient = this.blobServiceClient.GetBlobContainerClient(documentsContainerName);
+            var containerClient = this.blobServiceClient.GetBlobContainerClient(this.settings.StorageContainerNameBlobDocuments);
             foreach (var initialDocumentUrl in initialDocumentUrls)
             {
                 try
@@ -43,17 +45,7 @@ public class AzureStorageConfigurationService
                 }
             }
         }
-        await CreateContainerIfNotExistsAsync(chunksContainerName);
-    }
-
-    private async Task<IList<string>> GetContainersAsync()
-    {
-        var containerNames = new List<string>();
-        await foreach (var container in this.blobServiceClient.GetBlobContainersAsync())
-        {
-            containerNames.Add(container.Name);
-        }
-        return containerNames;
+        await CreateContainerIfNotExistsAsync(this.settings.StorageContainerNameBlobChunks);
     }
 
     private async Task<bool> CreateContainerIfNotExistsAsync(string containerName)

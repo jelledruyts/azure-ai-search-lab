@@ -11,6 +11,10 @@
             "minLength": 1,
             "defaultValue": "text-embedding-ada-002"
         },
+        "embeddingModelVectorDimensions": {
+            "type": "int",
+            "defaultValue": 1536
+        },
         "embeddingModelVersion": {
             "type": "String",
             "minLength": 1,
@@ -36,13 +40,21 @@
         "applicationInsightsName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-appinsights')]",
         "storageAccountName": "[concat(parameters('resourcePrefix'), uniquestring(resourceGroup().id), 'stg')]",
         "openaiServiceName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-openai')]",
-        "openaiApiVersion": "2023-05-15",
         "functionPlanName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-func-plan')]",
         "functionAppName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-func-app')]",
         "functionApiKey": "[concat(uniquestring(resourceGroup().id), '-', uniqueString(deployment().name))]",
         "webPlanName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-web-plan')]",
         "webAppName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-web-app')]",
-        "searchServiceName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-search')]"
+        "searchServiceName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-search')]",
+        "openaiApiVersion": "2023-05-15",
+        "storageContainerNameBlobDocuments": "blob-documents",
+        "storageContainerNameBlobChunks": "blob-chunks",
+        "textEmbedderNumTokens": 2048,
+        "textEmbedderTokenOverlap": 0,
+        "textEmbedderMinChunkSize": 10,
+        "searchIndexNameBlobDocuments": "blob-documents",
+        "searchIndexNameBlobChunks": "blob-chunks",
+        "searchIndexerScheduleMinutes": 5
     },
     "resources": [
         {
@@ -204,28 +216,12 @@
                             "value": "[variables('openaiApiVersion')]"
                         },
                         {
-                            "name": "AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
-                            "value": "[parameters('embeddingModelName')]"
-                        },
-                        {
                             "name": "AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS",
                             "value": "1"
                         },
                         {
                             "name": "AZURE_OPENAI_SERVICE_NAME",
                             "value": "[variables('openaiServiceName')]"
-                        },
-                        {
-                            "name": "MIN_CHUNK_SIZE",
-                            "value": "10"
-                        },
-                        {
-                            "name": "NUM_TOKENS",
-                            "value": "1024"
-                        },
-                        {
-                            "name": "TOKEN_OVERLAP",
-                            "value": "0"
                         }
                     ]
                 }
@@ -303,12 +299,24 @@
                             "value": "[parameters('embeddingModelName')]"
                         },
                         {
+                            "name": "OpenAIEmbeddingVectorDimensions",
+                            "value": "[parameters('embeddingModelVectorDimensions')]"
+                        },
+                        {
                             "name": "OpenAIGptDeployment",
                             "value": "[parameters('gptModelName')]"
                         },
                         {
                             "name": "StorageAccountConnectionString",
                             "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+                        },
+                        {
+                            "name": "StorageContainerNameBlobDocuments",
+                            "value": "[variables('storageContainerNameBlobDocuments')]"
+                        },
+                        {
+                            "name": "StorageContainerNameBlobChunks",
+                            "value": "[variables('storageContainerNameBlobChunks')]"
                         },
                         {
                             "name": "TextEmbedderFunctionEndpoint",
@@ -319,12 +327,36 @@
                             "value": "[variables('functionApiKey')]"
                         },
                         {
+                            "name": "TextEmbedderNumTokens",
+                            "value": "[variables('textEmbedderNumTokens')]"
+                        },
+                        {
+                            "name": "TextEmbedderTokenOverlap",
+                            "value": "[variables('textEmbedderTokenOverlap')]"
+                        },
+                        {
+                            "name": "TextEmbedderMinChunkSize",
+                            "value": "[variables('textEmbedderMinChunkSize')]"
+                        },
+                        {
                             "name": "SearchServiceUrl",
                             "value": "[concat('https://', variables('searchServiceName'), '.search.windows.net')]"
                         },
                         {
                             "name": "SearchServiceAdminKey",
                             "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2022-09-01').primaryKey]"
+                        },
+                        {
+                            "name": "SearchIndexNameBlobDocuments",
+                            "value": "[variables('searchIndexNameBlobDocuments')]"
+                        },
+                        {
+                            "name": "SearchIndexNameBlobChunks",
+                            "value": "[variables('searchIndexNameBlobChunks')]"
+                        },
+                        {
+                            "name": "SearchIndexerScheduleMinutes",
+                            "value": "[variables('searchIndexerScheduleMinutes')]"
                         },
                         {
                             "name": "InitialDocumentUrls",
@@ -352,6 +384,10 @@
             "type": "string",
             "value": "[parameters('embeddingModelName')]"
         },
+        "openAIEmbeddingVectorDimensions": {
+            "type": "int",
+            "value": "[parameters('embeddingModelVectorDimensions')]"
+        },
         "openAIGptDeployment": {
             "type": "string",
             "value": "[parameters('gptModelName')]"
@@ -359,6 +395,14 @@
         "storageAccountConnectionString": {
             "type": "string",
             "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+        },
+        "storageContainerNameBlobDocuments": {
+            "type": "string",
+            "value": "[variables('storageContainerNameBlobDocuments')]"
+        },
+        "storageContainerNameBlobChunks": {
+            "type": "string",
+            "value": "[variables('storageContainerNameBlobChunks')]"
         },
         "textEmbedderFunctionEndpoint": {
             "type": "string",
@@ -368,6 +412,18 @@
             "type": "string",
             "value": "[variables('functionApiKey')]"
         },
+        "textEmbedderNumTokens": {
+            "type": "int",
+            "value": "[variables('textEmbedderNumTokens')]"
+        },
+        "textEmbedderTokenOverlap": {
+            "type": "int",
+            "value": "[variables('textEmbedderTokenOverlap')]"
+        },
+        "textEmbedderMinChunkSize": {
+            "type": "int",
+            "value": "[variables('textEmbedderMinChunkSize')]"
+        },
         "searchServiceUrl": {
             "type": "string",
             "value": "[concat('https://', variables('searchServiceName'), '.search.windows.net')]"
@@ -375,6 +431,18 @@
         "searchServiceAdminKey": {
             "type": "string",
             "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2022-09-01').primaryKey]"
+        },
+        "searchIndexNameBlobDocuments": {
+            "type": "string",
+            "value": "[variables('searchIndexNameBlobDocuments')]"
+        },
+        "searchIndexNameBlobChunks": {
+            "type": "string",
+            "value": "[variables('searchIndexNameBlobChunks')]"
+        },
+        "searchIndexerScheduleMinutes": {
+            "type": "int",
+            "value": "[variables('searchIndexerScheduleMinutes')]"
         },
         "initialDocumentUrls": {
             "type": "string",

@@ -23,6 +23,7 @@
                     <div class="navbar-nav flex-grow-1">
                         <a class="nav-link @(this.ViewContext.View.Path.StartsWith("/Pages/Index", StringComparison.OrdinalIgnoreCase) ? "active": "")" asp-page="/Index">Search</a>
                         <a class="nav-link @(this.ViewContext.View.Path.StartsWith("/Pages/Compare", StringComparison.OrdinalIgnoreCase) ? "active": "")" asp-page="/Compare">Compare</a>
+                        <a class="nav-link @(this.ViewContext.View.Path.StartsWith("/Pages/Content", StringComparison.OrdinalIgnoreCase) ? "active": "")" asp-page="/Content">Content</a>
                     </div>
                     <div class="navbar-nav">
                         <div class="nav-item dropdown">

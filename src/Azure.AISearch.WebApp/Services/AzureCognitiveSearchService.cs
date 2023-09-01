@@ -27,13 +27,8 @@ public class AzureCognitiveSearchService : ISearchService
         {
             return null;
         }
-        if (request.SearchIndexName != Constants.IndexNames.BlobDocuments && request.SearchIndexName != Constants.IndexNames.BlobChunks)
-        {
-            // Cannot infer which shape the search results will have, so don't continue.
-            throw new NotSupportedException($"Search index \"{request.SearchIndexName}\" is not supported.");
-        }
-        var useDocumentsIndex = request.SearchIndexName == Constants.IndexNames.BlobDocuments;
-
+        var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
+        var indexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks;
         var searchOptions = new SearchOptions
         {
             QueryType = request.IsSemanticSearch ? SearchQueryType.Semantic : SearchQueryType.Simple,
@@ -57,7 +52,7 @@ public class AzureCognitiveSearchService : ISearchService
         {
             SetSearchOptionsForChunksIndex(searchOptions, request.QueryType);
         }
-        var requestedSearchClient = new SearchClient(this.searchServiceUrl, request.SearchIndexName, this.searchServiceAdminCredential);
+        var requestedSearchClient = new SearchClient(this.searchServiceUrl, indexName, this.searchServiceAdminCredential);
 
         if (request.IsVectorSearch)
         {
@@ -81,12 +76,12 @@ public class AzureCognitiveSearchService : ISearchService
         // Perform the search.
         var serviceResponse = await requestedSearchClient.SearchAsync<SearchDocument>(searchText, searchOptions);
         var response = new SearchResponse();
-        response.Answers = serviceResponse.Value.Answers == null ? Array.Empty<SearchAnswer>() : serviceResponse.Value.Answers.Select(a => new SearchAnswer { SearchIndexName = request.SearchIndexName, SearchIndexKey = a.Key, Score = a.Score, Text = string.IsNullOrWhiteSpace(a.Highlights) ? a.Text : a.Highlights }).ToList();
+        response.Answers = serviceResponse.Value.Answers == null ? Array.Empty<SearchAnswer>() : serviceResponse.Value.Answers.Select(a => new SearchAnswer { SearchIndexName = indexName, SearchIndexKey = a.Key, Score = a.Score, Text = string.IsNullOrWhiteSpace(a.Highlights) ? a.Text : a.Highlights }).ToList();
         response.Captions = serviceResponse.Value.Captions == null ? Array.Empty<string>() : serviceResponse.Value.Captions.Select(c => string.IsNullOrWhiteSpace(c.Highlights) ? c.Text : c.Highlights).ToList();
         foreach (var result in serviceResponse.Value.GetResults())
         {
             var searchResult = useDocumentsIndex ? GetSearchResultForDocumentsIndex(result) : GetSearchResultForChunksIndex(result, request.QueryType);
-            searchResult.SearchIndexName = request.SearchIndexName;
+            searchResult.SearchIndexName = indexName;
             response.SearchResults.Add(searchResult);
 
             // Answers may refer to chunk IDs, ensure to map them to the right document ID.

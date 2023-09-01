@@ -1,0 +1,42 @@
+@page
+@model ContentModel
+@{
+    ViewData["Title"] = "Content";
+}
+
+<h2 class="display-6 mb-3">Content</h2>
+
+<h3 class="mb-3">Search indexes</h3>
+
+@if (Model.SearchIndexStatuses != null && Model.SearchIndexStatuses.Any())
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Document Count</th>
+                <th>Indexer Status</th>
+                <th>Indexer Last Run (UTC)</th>
+                <th>Run Indexer</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var searchIndex in Model.SearchIndexStatuses)
+            {
+                <tr>
+                    <td>@searchIndex.Name</td>
+                    <td>@searchIndex.DocumentCount</td>
+                    <td>@searchIndex.IndexerStatus</td>
+                    <td>@searchIndex.IndexerLastRunTime?.ToString("u")</td>
+                    <td>
+                        <form method="post">
+                            <input type="hidden" name="action" value="@ContentModel.RunSearchIndexer">
+                            <input type="hidden" name="searchIndexName" value="@searchIndex.Name">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Run now</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -125,12 +125,7 @@ public class AzureOpenAISearchService : ISearchService
 
     private DataSource GetAzureCognitiveSearchDataSource(SearchRequest request)
     {
-        if (request.SearchIndexName != Constants.IndexNames.BlobDocuments && request.SearchIndexName != Constants.IndexNames.BlobChunks)
-        {
-            // Cannot infer which shape the search results will have, so don't continue.
-            throw new NotSupportedException($"Search index \"{request.SearchIndexName}\" is not supported.");
-        }
-        var useDocumentsIndex = request.SearchIndexName == Constants.IndexNames.BlobDocuments;
+        var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
         return new DataSource
         {
             Type = "AzureCognitiveSearch",
@@ -138,7 +133,7 @@ public class AzureOpenAISearchService : ISearchService
             {
                 Endpoint = this.settings.SearchServiceUrl,
                 Key = this.settings.SearchServiceAdminKey,
-                IndexName = request.SearchIndexName,
+                IndexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks,
                 FieldsMapping = new AzureCognitiveSearchParametersFieldsMapping
                 {
                     ContentFields = new[] { useDocumentsIndex ? nameof(Document.Content) : nameof(DocumentChunk.Content) },

@@ -22,6 +22,7 @@ builder.Services.AddSingleton<IEmbeddingService, AzureOpenAIEmbeddingService>();
 builder.Services.AddSingleton<ISearchService, AzureCognitiveSearchService>();
 builder.Services.AddSingleton<ISearchService, AzureOpenAISearchService>();
 builder.Services.AddSingleton<SearchRequestHandler>();
+builder.Services.AddSingleton<SearchScenarioProvider>();
 
 // Asynchronously initialize the application on startup.
 builder.Services.AddHostedService<AppInitializationHostedService>();

@@ -40,7 +40,7 @@
                 <div class="form-group">
                     <select class="form-select" v-model="selectedScenario">
                         <option v-bind:value="null">None</option>
-                        <option v-for="scenario in scenarios" v-bind:value="scenario">{{ scenario.name }}</option>
+                        <option v-for="scenario in scenarios" v-bind:value="scenario">{{ scenario.displayName }}</option>
                     </select>
                 </div>
                 <div class="alert alert-primary mt-2" v-if="selectedScenario && selectedScenario.description">
@@ -96,13 +96,13 @@
                 <label class="form-label">Search index</label>
                 <div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobDocuments" value="@Constants.IndexNames.BlobDocuments" v-model="searchRequest.searchIndexName">
-                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobDocuments">Documents</label>
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndex)" id="searchRequest-SearchIndex-Documents" value="@SearchIndexType.Documents" v-model="searchRequest.searchIndex">
+                        <label class="form-check-label" for="searchRequest-SearchIndex-Documents">Documents</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Contains the full text content of the source data, as <a href='https://learn.microsoft.com/azure/search/search-blob-storage-integration' target='_blank'>extracted from your files in Blob storage</a>. Each file and its entire contents are stored as a single document in the search index, which can therefore be quite large. For regular text or semantic search that works great, but large content may cause issues with token limits, prompt size and content relevancy in AI applications."><i class="bi bi-info-circle"></i></span>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndexName)" id="searchRequest-SearchIndexName-BlobChunks" value="@Constants.IndexNames.BlobChunks" v-model="searchRequest.searchIndexName">
-                        <label class="form-check-label" for="searchRequest-SearchIndexName-BlobChunks">Chunks</label>
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.SearchIndex)" id="searchRequest-SearchIndex-Chunks" value="@SearchIndexType.Chunks" v-model="searchRequest.searchIndex">
+                        <label class="form-check-label" for="searchRequest-SearchIndex-Chunks">Chunks</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Each file in the <code>Documents</code> index is automatically processed by an <a href='https://learn.microsoft.com/azure/search/cognitive-search-working-with-skillsets' target='_blank'>Azure Cognitive Search skillset</a>. This splits it into smaller pieces (chunks) and then uses an <a href='https://learn.microsoft.com/azure/ai-services/openai/how-to/embeddings' target='_blank'>embedding model in Azure OpenAI</a> to generate a vector representation of that piece of content. Each chunk's content and this vector are then stored as a separate document in the search index. This makes it much better suited to find the most relevant piece of content by using <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector (or hybrid) search</a> search, and reduces the content size to make an AI prompt fit within token limits."><i class="bi bi-info-circle"></i></span>
                     </div>
                 </div>
@@ -122,17 +122,17 @@
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use <a href='https://learn.microsoft.com/azure/search/semantic-search-overview' target='_blank'>semantic search</a>, which returns more relevant results by applying language understanding to initial search results. It can also return <a href='https://learn.microsoft.com/azure/search/semantic-how-to-query-request' target='_blank'>semantic captions</a> (parts of a document that best summarize the content) and even <a href='https://learn.microsoft.com/azure/search/semantic-answers' target='_blank'>semantic answers</a> (direct answers to queries that look like a question). In all cases, the responses aren't AI-generated but come directly from the source data."><i class="bi bi-info-circle"></i></span>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndexName == '@Constants.IndexNames.BlobDocuments'">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndex == '@SearchIndexType.Documents'">
                         <label class="form-check-label" for="searchRequest-QueryType-Vector">Vector only</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="First send the search query to an <a href='https://learn.microsoft.com/azure/ai-services/openai/how-to/embeddings' target='_blank'>embedding model in Azure OpenAI</a> to generate a vector representing the query itself. Then perform a <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector search</a> to retrieve the nearest neighbors in vector space from the chunked and vectorized documents in the <code>Chunks</code> index. This should return results that are semantically similar to the query, as determined by the embedding model's vector representations."><i class="bi bi-info-circle"></i></span>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridStandard" value="@QueryType.HybridStandard" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndexName == '@Constants.IndexNames.BlobDocuments'">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridStandard" value="@QueryType.HybridStandard" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndex == '@SearchIndexType.Documents'">
                         <label class="form-check-label" for="searchRequest-QueryType-HybridStandard">Standard hybrid (text + vector)</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Combine the results of a <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector search</a> with the regular <a href='https://learn.microsoft.com/azure/search/search-lucene-query-architecture' target='_blank'>full-text search</a> results into a single ranked response."><i class="bi bi-info-circle"></i></span>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndexName == '@Constants.IndexNames.BlobDocuments'">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndex == '@SearchIndexType.Documents'">
                         <label class="form-check-label" for="searchRequest-QueryType-HybridSemantic">Semantic hybrid (text + vector)</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Combine the results of a <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector search</a> with <a href='https://learn.microsoft.com/azure/search/semantic-search-overview' target='_blank'>semantic search</a> results into a single ranked response. Compared to standard hybrid search, this provides even more accuracy with L2 reranking using the same language models that power Bing."><i class="bi bi-info-circle"></i></span>
                     </div>
