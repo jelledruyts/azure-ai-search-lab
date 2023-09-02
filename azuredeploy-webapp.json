@@ -54,7 +54,9 @@
         "textEmbedderMinChunkSize": 10,
         "searchIndexNameBlobDocuments": "blob-documents",
         "searchIndexNameBlobChunks": "blob-chunks",
-        "searchIndexerScheduleMinutes": 5
+        "searchIndexerScheduleMinutes": 5,
+        "disableUploadDocuments": false,
+        "disableResetSearchConfiguration": false
     },
     "resources": [
         {
@@ -361,6 +363,14 @@
                         {
                             "name": "InitialDocumentUrls",
                             "value": "[parameters('initialDocumentUrls')]"
+                        },
+                        {
+                            "name": "DisableUploadDocuments",
+                            "value": "[variables('disableUploadDocuments')]"
+                        },
+                        {
+                            "name": "DisableResetSearchConfiguration",
+                            "value": "[variables('disableResetSearchConfiguration')]"
                         }
                     ]
                 }
@@ -447,6 +457,14 @@
         "initialDocumentUrls": {
             "type": "string",
             "value": "[parameters('initialDocumentUrls')]"
+        },
+        "disableUploadDocuments": {
+            "type": "bool",
+            "value": "[variables('disableUploadDocuments')]"
+        },
+        "disableResetSearchConfiguration": {
+            "type": "bool",
+            "value": "[variables('disableResetSearchConfiguration')]"
         },
         "webAppUrl": {
             "type": "string",
