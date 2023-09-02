@@ -27,7 +27,7 @@ public class AzureOpenAISearchService : ISearchService
 
     private Uri GetAzureOpenAIUrl(Uri baseUrl, string deploymentName, string path)
     {
-        return new Uri(baseUrl, $"openai/deployments/{deploymentName}/{path}?api-version=2023-06-01-preview");
+        return new Uri(baseUrl, $"openai/deployments/{deploymentName}/{path}?api-version={this.settings.OpenAIApiVersion}");
     }
 
     public async Task<SearchResponse?> SearchAsync(SearchRequest request)

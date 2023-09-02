@@ -22,7 +22,7 @@ public class AzureCognitiveSearchConfigurationService
         this.indexerClient = new SearchIndexerClient(searchServiceUrl, searchServiceAdminCredential);
     }
 
-    public async Task InitializeAsync()
+    public async Task InitializeAsync(AppSettingsOverride? settingsOverride = null)
     {
         ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobDocuments);
         ArgumentNullException.ThrowIfNull(this.settings.StorageContainerNameBlobDocuments);
@@ -30,11 +30,11 @@ public class AzureCognitiveSearchConfigurationService
         ArgumentNullException.ThrowIfNull(this.settings.SearchIndexNameBlobChunks);
         if (!await SearchIndexExistsAsync(this.settings.SearchIndexNameBlobDocuments))
         {
-            await CreateDocumentsIndex(this.settings.SearchIndexNameBlobDocuments, this.settings.StorageContainerNameBlobDocuments, this.settings.StorageContainerNameBlobChunks);
+            await CreateDocumentsIndex(settingsOverride, this.settings.SearchIndexNameBlobDocuments, this.settings.StorageContainerNameBlobDocuments, this.settings.StorageContainerNameBlobChunks);
         }
         if (!await SearchIndexExistsAsync(this.settings.SearchIndexNameBlobChunks))
         {
-            await CreateChunksIndex(this.settings.SearchIndexNameBlobChunks, this.settings.StorageContainerNameBlobChunks);
+            await CreateChunksIndex(settingsOverride, this.settings.SearchIndexNameBlobChunks, this.settings.StorageContainerNameBlobChunks);
         }
     }
 
@@ -118,7 +118,7 @@ public class AzureCognitiveSearchConfigurationService
         }
     }
 
-    private async Task CreateDocumentsIndex(string documentsIndexName, string documentsContainerName, string chunksContainerName)
+    private async Task CreateDocumentsIndex(AppSettingsOverride? settingsOverride, string documentsIndexName, string documentsContainerName, string chunksContainerName)
     {
         // Create the search index for the documents.
         var documentsIndex = GetDocumentsSearchIndex(documentsIndexName);
@@ -130,13 +130,13 @@ public class AzureCognitiveSearchConfigurationService
 
         // Create the skillset which chunks and vectorizes the document's content and stores it as JSON
         // files in blob storage (as a knowledge store) so it can be indexed separately.
-        var skillset = GetDocumentsSearchIndexerSkillset(documentsIndexName, chunksContainerName);
+        var skillset = GetDocumentsSearchIndexerSkillset(settingsOverride, documentsIndexName, chunksContainerName);
         await this.indexerClient.CreateSkillsetAsync(skillset);
 
         // Create the indexer.
         var documentsIndexer = new SearchIndexer(GetIndexerName(documentsIndexName), documentsDataSourceConnection.Name, documentsIndex.Name)
         {
-            Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
+            Schedule = new IndexingSchedule(GetIndexingSchedule(settingsOverride)),
             FieldMappings =
                 {
                     // Map the full blob URL to the document ID, base64 encoded to ensure it has only valid characters for a document ID.
@@ -186,9 +186,9 @@ public class AzureCognitiveSearchConfigurationService
         };
     }
 
-    private SearchIndexerSkillset GetDocumentsSearchIndexerSkillset(string indexName, string knowledgeStoreContainerName)
+    private SearchIndexerSkillset GetDocumentsSearchIndexerSkillset(AppSettingsOverride? settingsOverride, string indexName, string knowledgeStoreContainerName)
     {
-        return new SearchIndexerSkillset(GetSkillsetName(indexName), Array.Empty<SearchIndexerSkill>())
+        var skillset = new SearchIndexerSkillset(GetSkillsetName(indexName), Array.Empty<SearchIndexerSkill>())
         {
             Skills =
             {
@@ -265,9 +265,28 @@ public class AzureCognitiveSearchConfigurationService
                 }
             }
         };
+
+        // Configure any optional settings that can be overridden by the indexer rather than depending on the default
+        // values in the text embedder Function App.
+        var textEmbedderNumTokens = settingsOverride?.TextEmbedderNumTokens ?? this.settings.TextEmbedderNumTokens;
+        if (textEmbedderNumTokens != null)
+        {
+            skillset.Skills[0].Inputs.Add(new InputFieldMappingEntry("num_tokens") { Source = $"={textEmbedderNumTokens}" });
+        }
+        var textEmbedderTokenOverlap = settingsOverride?.TextEmbedderTokenOverlap ?? this.settings.TextEmbedderTokenOverlap;
+        if (textEmbedderTokenOverlap != null)
+        {
+            skillset.Skills[0].Inputs.Add(new InputFieldMappingEntry("token_overlap") { Source = $"={textEmbedderTokenOverlap}" });
+        }
+        var textEmbedderMinChunkSize = settingsOverride?.TextEmbedderMinChunkSize ?? this.settings.TextEmbedderMinChunkSize;
+        if (textEmbedderMinChunkSize != null)
+        {
+            skillset.Skills[0].Inputs.Add(new InputFieldMappingEntry("min_chunk_size") { Source = $"={textEmbedderMinChunkSize}" });
+        }
+        return skillset;
     }
 
-    private async Task CreateChunksIndex(string chunksIndexName, string chunksContainerName)
+    private async Task CreateChunksIndex(AppSettingsOverride? settingsOverride, string chunksIndexName, string chunksContainerName)
     {
         // Create the index which represents the chunked data from the main indexer's knowledge store.
         var chunkSearchIndex = GetChunksSearchIndex(chunksIndexName);
@@ -280,7 +299,7 @@ public class AzureCognitiveSearchConfigurationService
         // Create the chunk indexer based on the JSON files in the knowledge store.
         var chunksIndexer = new SearchIndexer(GetIndexerName(chunksIndexName), chunksDataSourceConnection.Name, chunkSearchIndex.Name)
         {
-            Schedule = new IndexingSchedule(TimeSpan.FromMinutes(5)),
+            Schedule = new IndexingSchedule(GetIndexingSchedule(settingsOverride)),
             Parameters = new IndexingParameters()
             {
                 IndexingParametersConfiguration = new IndexingParametersConfiguration()
@@ -347,6 +366,13 @@ public class AzureCognitiveSearchConfigurationService
                 }
             }
         };
+    }
+
+    private TimeSpan GetIndexingSchedule(AppSettingsOverride? settingsOverride)
+    {
+        var minutes = settingsOverride?.SearchIndexerScheduleMinutes ?? this.settings.SearchIndexerScheduleMinutes ?? 5;
+        minutes = Math.Max(5, minutes); // Ensure the minimum is 5 minutes, as required by Azure Cognitive Search.
+        return TimeSpan.FromMinutes(minutes);
     }
 
     private static string GetIndexerName(string indexName)

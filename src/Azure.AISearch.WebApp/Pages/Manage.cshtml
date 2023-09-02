@@ -1,0 +1,96 @@
+@page
+@inject AppSettings settings;
+@model ManageModel
+@{
+    ViewData["Title"] = "Manage";
+}
+@section Scripts {
+    <script>
+        // Enable popovers. 
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, { html: true }))
+    </script>
+}
+
+<h2 class="display-6 mb-3">@ViewData["Title"]</h2>
+
+@if (Model.SearchIndexStatuses != null && Model.SearchIndexStatuses.Any())
+{
+    <h3 class="mb-3">Search index status</h3>
+
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Document Count</th>
+                <th>Indexer Status</th>
+                <th>Indexer Last Run (UTC)</th>
+                <th>Run Indexer</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var searchIndex in Model.SearchIndexStatuses)
+            {
+                <tr>
+                    <td>@searchIndex.Name</td>
+                    <td>@searchIndex.DocumentCount</td>
+                    <td>@searchIndex.IndexerStatus</td>
+                    <td>@searchIndex.IndexerLastRunTime?.ToString("u")</td>
+                    <td>
+                        <form method="post">
+                            <input type="hidden" name="action" value="@ManageModel.RunSearchIndexer">
+                            <input type="hidden" name="searchIndexName" value="@searchIndex.Name">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Run now</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h3 class="mb-3">Reset search configuration</h3>
+
+<form method="post">
+    <div class="alert alert-danger">
+        <p>
+            This will delete all indexes in Azure Cognitive Search along with their supporting infrastructure
+            like indexers, data sources and skillset definitions.
+        </p>
+        <p>
+            It will also delete all content in the <code>Chunks</code> blob container in the configured Azure Storage
+            account (as the chunks will be recreated from the source data, optionally with the new settings below).
+        </p>
+        <p>
+            However, it will <b><i>not</i></b> delete any data in the <code>Documents</code> container, so all your
+            previously uploaded documents will remain available and will be re-indexed after the configuration is reset.
+        </p>
+    </div>
+    <div class="card mb-3">
+        <div class="card-header">Options</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label" for="appSettingsOverride-TextEmbedderNumTokens">Number of tokens per chunk</label>
+                <span class="info-tip" data-bs-toggle="popover" data-bs-content="The source data will be split up into smaller chunks of approximately the token size you specify here. Embeddings are generated per chunk so the larger the chunks, the more likely you will hit token limits and the more likely the vector representation will be less specific (as it's generated from a larger body of content). Experiment with this value based on the type of content being chunked and the kinds of recall performance required for retrieval scenarios."><i class="bi bi-info-circle"></i></span>
+                <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextEmbedderNumTokens)" id="appSettingsOverride-TextEmbedderNumTokens" value="@settings.TextEmbedderNumTokens">
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="appSettingsOverride-TextEmbedderTokenOverlap">Token overlap between chunks</label>
+                <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of tokens to overlap between consecutive chunks. This is useful to maintain context continuity between chunks. By including some overlapping tokens, you can ensure that a small portion of context is shared between adjacent chunks, which can help with preserving the meaning and coherence when processing the text with language models."><i class="bi bi-info-circle"></i></span>
+                <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextEmbedderTokenOverlap)" id="appSettingsOverride-TextEmbedderTokenOverlap" value="@settings.TextEmbedderTokenOverlap">
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="appSettingsOverride-TextEmbedderMinChunkSize">Minimum chunk size</label>
+                <span class="info-tip" data-bs-toggle="popover" data-bs-content="The minimum number of tokens that a chunk should contain in order to be included in the <code>Chunks</code> index. This helps avoid that small chunks (with only a few words for example) have a disproportional impact on search results."><i class="bi bi-info-circle"></i></span>
+                <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextEmbedderMinChunkSize)" id="appSettingsOverride-TextEmbedderMinChunkSize" value="@settings.TextEmbedderMinChunkSize">
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="appSettingsOverride-SearchIndexerScheduleMinutes">Search indexer interval in minutes (minimum <code>5</code>)</label>
+                <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of minutes between indexer executions. If you upload new documents, it can take up to this amount of time for the data to be included in the <code>Documents</code> index. It can again take the same amount of time after that for the data to be included in the <code>Chunks</code> index, as the chunks are created while the indexer for the <code>Documents</code> index runs."><i class="bi bi-info-circle"></i></span>
+                <input type="number" class="form-control" name="@nameof(AppSettingsOverride.SearchIndexerScheduleMinutes)" id="appSettingsOverride-SearchIndexerScheduleMinutes" value="@settings.SearchIndexerScheduleMinutes">
+            </div>
+        </div>
+    </div>
+    <input type="hidden" name="action" value="@ManageModel.ResetSearchConfiguration">
+    <button type="submit" class="btn btn-danger">Reset configuration</button>
+</form>

@@ -21,10 +21,12 @@ public class AzureStorageConfigurationService
     {
         ArgumentNullException.ThrowIfNull(this.settings.StorageContainerNameBlobDocuments);
         ArgumentNullException.ThrowIfNull(this.settings.StorageContainerNameBlobChunks);
+
+        // Create the documents container if it doesn't exist yet.
         var documentsContainerWasJustCreated = await CreateContainerIfNotExistsAsync(this.settings.StorageContainerNameBlobDocuments);
         if (documentsContainerWasJustCreated && !string.IsNullOrWhiteSpace(this.settings.InitialDocumentUrls))
         {
-            // Upload initial documents to the container.
+            // Upload initial documents to the container only upon initial creation.
             this.logger.LogInformation($"Uploading initial documents to the storage container: {this.settings.InitialDocumentUrls}");
             var initialDocumentUrls = this.settings.InitialDocumentUrls.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             var containerClient = this.blobServiceClient.GetBlobContainerClient(this.settings.StorageContainerNameBlobDocuments);
@@ -45,7 +47,23 @@ public class AzureStorageConfigurationService
                 }
             }
         }
+
+        // Create the chunks container if it doesn't exist yet.
         await CreateContainerIfNotExistsAsync(this.settings.StorageContainerNameBlobChunks);
+    }
+
+    public async Task UninitializeAsync()
+    {
+        // Don't delete the documents container or anything in it, as this might hold
+        // additional documents that were uploaded by the user.
+        // Also don't delete the chunks container itself, as it takes a while before you
+        // can recreate a container with the same name; instead delete all blobs inside it.
+        // This ensures there are no left-over chunks that would get picked up by the indexer.
+        var containerClient = this.blobServiceClient.GetBlobContainerClient(this.settings.StorageContainerNameBlobChunks);
+        await foreach (var blob in containerClient.GetBlobsAsync())
+        {
+            await containerClient.DeleteBlobAsync(blob.Name);
+        }
     }
 
     private async Task<bool> CreateContainerIfNotExistsAsync(string containerName)
