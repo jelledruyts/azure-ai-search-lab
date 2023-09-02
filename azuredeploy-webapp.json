@@ -55,6 +55,7 @@
         "searchIndexNameBlobDocuments": "blob-documents",
         "searchIndexNameBlobChunks": "blob-chunks",
         "searchIndexerScheduleMinutes": 5,
+        "defaultSystemRoleInformation": "You are an AI assistant that helps people find information.",
         "disableUploadDocuments": false,
         "disableResetSearchConfiguration": false
     },
@@ -365,6 +366,10 @@
                             "value": "[parameters('initialDocumentUrls')]"
                         },
                         {
+                            "name": "DefaultSystemRoleInformation",
+                            "value": "[variables('defaultSystemRoleInformation')]"
+                        },
+                        {
                             "name": "DisableUploadDocuments",
                             "value": "[variables('disableUploadDocuments')]"
                         },
@@ -457,6 +462,10 @@
         "initialDocumentUrls": {
             "type": "string",
             "value": "[parameters('initialDocumentUrls')]"
+        },
+        "defaultSystemRoleInformation": {
+            "type": "string",
+            "value": "[variables('defaultSystemRoleInformation')]"
         },
         "disableUploadDocuments": {
             "type": "bool",

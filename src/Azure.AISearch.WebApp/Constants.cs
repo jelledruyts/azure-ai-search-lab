@@ -15,9 +15,4 @@ public static class Constants
         public const string SemanticConfigurationNameDefault = "default";
         public const string VectorSearchConfigurationNameDefault = "default";
     }
-
-    public static class SystemRoleInformations
-    {
-        public const string Default = "You are an AI assistant that helps people find information.";
-    }
 }

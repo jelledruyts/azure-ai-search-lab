@@ -109,7 +109,8 @@ public class SearchScenarioProvider
                 SearchRequest = new SearchRequest
                 {
                     Engine = EngineType.AzureOpenAI,
-                    DataSource = DataSourceType.None
+                    DataSource = DataSourceType.None,
+                    SystemRoleInformation = this.settings.DefaultSystemRoleInformation
                 }
             },
             new SearchScenario
@@ -120,9 +121,10 @@ public class SearchScenarioProvider
                 SearchRequest = new SearchRequest
                 {
                     Engine = EngineType.AzureOpenAI,
+                    DataSource = DataSourceType.AzureCognitiveSearch,
+                    SystemRoleInformation = this.settings.DefaultSystemRoleInformation,
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
                     QueryType = QueryType.TextSemantic, // As a built-in scenario, always use semantic search for best results
-                    DataSource = DataSourceType.AzureCognitiveSearch,
                     LimitToDataSource = true
                 }
             }

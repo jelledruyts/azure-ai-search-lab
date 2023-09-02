@@ -22,6 +22,7 @@ public class AppSettings
     public string? SearchIndexNameBlobChunks { get; set; }
     public int? SearchIndexerScheduleMinutes { get; set; } // If unspecified, will be set to 5 minutes.
     public string? InitialDocumentUrls { get; set; }
+    public string? DefaultSystemRoleInformation { get; set; } = "You are an AI assistant that helps people find information.";
     public bool DisableUploadDocuments { get; set; } // If true, the Upload Documents functionality will be disabled.
     public bool DisableResetSearchConfiguration { get; set; } // If true, the Reset Search Configuration functionality will be disabled.
 }

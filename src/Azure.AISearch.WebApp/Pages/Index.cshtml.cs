@@ -6,6 +6,7 @@ namespace Azure.AISearch.WebApp.Pages;
 
 public class IndexModel : PageModel
 {
+    private readonly AppSettings settings;
     private readonly SearchRequestHandler searchRequestHandler;
     private readonly SearchScenarioProvider searchScenarioProvider;
 
@@ -13,12 +14,16 @@ public class IndexModel : PageModel
     public SearchRequest SearchRequest { get; set; }
     public SearchResponse? SearchResponse { get; set; }
 
-    public IndexModel(SearchRequestHandler searchRequestHandler, SearchScenarioProvider searchScenarioProvider)
+    public IndexModel(AppSettings settings, SearchRequestHandler searchRequestHandler, SearchScenarioProvider searchScenarioProvider)
     {
+        this.settings = settings;
         this.searchRequestHandler = searchRequestHandler;
         this.searchScenarioProvider = searchScenarioProvider;
         this.Scenarios = this.searchScenarioProvider.GetSearchScenarios();
-        this.SearchRequest = new SearchRequest();
+        this.SearchRequest = new SearchRequest
+        {
+            SystemRoleInformation = this.settings.DefaultSystemRoleInformation
+        };
     }
 
     public async Task OnPost(SearchRequest searchRequest)
