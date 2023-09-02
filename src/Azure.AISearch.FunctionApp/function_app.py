@@ -55,9 +55,9 @@ def text_chunking(req: func.HttpRequest) -> func.HttpResponse:
 
         # Set parameters from environment variables (configuration) but allow some to be overridden per request
         sleep_interval_seconds = int(os.getenv("AZURE_OPENAI_EMBEDDING_SLEEP_INTERVAL_SECONDS", "1"))
-        num_tokens = value['data']['num_tokens'] if 'num_tokens' in value['data'] else int(os.getenv("NUM_TOKENS", "2048"))
-        token_overlap = value['data']['token_overlap'] if 'token_overlap' in value['data'] else int(os.getenv("TOKEN_OVERLAP", "0"))
-        min_chunk_size = value['data']['min_chunk_size'] if 'min_chunk_size' in value['data'] else int(os.getenv("MIN_CHUNK_SIZE", "10"))
+        num_tokens = int(value['data']['num_tokens']) if 'num_tokens' in value['data'] else int(os.getenv("NUM_TOKENS", "2048"))
+        token_overlap = int(value['data']['token_overlap']) if 'token_overlap' in value['data'] else int(os.getenv("TOKEN_OVERLAP", "0"))
+        min_chunk_size = int(value['data']['min_chunk_size']) if 'min_chunk_size' in value['data'] else int(os.getenv("MIN_CHUNK_SIZE", "10"))
         embedding_deployment_name = value['data']['embedding_deployment_name'] if 'embedding_deployment_name' in value['data'] else os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
 
         # chunk documents into chunks of (by default) 2048 tokens, and for each chunk, generate the vector embedding
@@ -104,9 +104,9 @@ def get_request_schema():
                                 "document_id": {"type": "string", "minLength": 1},
                                 "filepath": {"type": "string", "minLength": 1},
                                 "fieldname": {"type": "string", "minLength": 1},
-                                "num_tokens": {"type": "integer"},
-                                "token_overlap": {"type": "integer"},
-                                "min_chunk_size": {"type": "integer"},
+                                "num_tokens": {},
+                                "token_overlap": {},
+                                "min_chunk_size": {},
                                 "embedding_deployment_name": {"type": "string"}
                             },
                             "required": ["text", "document_id", "filepath", "fieldname"],
