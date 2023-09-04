@@ -30,6 +30,11 @@
             "minLength": 1,
             "defaultValue": "0301"
         },
+        "searchServiceSku": {
+            "type": "String",
+            "minLength": 1,
+            "defaultValue": "basic"
+        },
         "initialDocumentUrls": {
             "type": "String",
             "defaultValue": "https://azure.microsoft.com/mediahandler/files/resourcefiles/resilience-in-azure-whitepaper/Resiliency-whitepaper.pdf https://azure.microsoft.com/mediahandler/files/resourcefiles/data-residency-data-sovereignty-and-compliance-in-the-microsoft-cloud/Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf"
@@ -236,7 +241,7 @@
             "name": "[variables('searchServiceName')]",
             "location": "[resourceGroup().location]",
             "sku": {
-                "name": "basic"
+                "name": "[parameters('searchServiceSku')]"
             },
             "properties": {
                 "replicaCount": 1,
