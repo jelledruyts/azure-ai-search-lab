@@ -8,6 +8,18 @@ By default, a few documents are added automatically to allow you to use the appl
 
 There are a number of related and somewhat similar projects, most notably [ChatGPT + Enterprise data with Azure OpenAI and Cognitive Search](https://github.com/Azure-Samples/azure-search-openai-demo) and [Sample Chat App with Azure OpenAI](https://github.com/Microsoft/sample-app-aoai-chatGPT). The main differentiators for this project however are that it's extremely [easy to set up](#deployment) and that it's aimed to be a *teaching and experimentation app*, rather than a sample focusing on just one service or scenario, or showing how you can build a realistic production-ready service yourself.
 
+**Learn about different options and fire off a search query:**
+
+![Search options](media/search-options.png)
+
+**See search results, including *semantic answers* when available:**
+
+![Search results](media/search-results.png)
+
+**Compare the results of various built-in scenarios:**
+
+![Compare scenarios](media/compare-results.png)
+
 ## Architecture
 
 ```mermaid
@@ -72,7 +84,7 @@ The following deployment parameters are used:
 | `gptModelName` | The name of the [Azure OpenAI GPT model](https://learn.microsoft.com/azure/ai-services/openai/concepts/models) to use | `gpt-35-turbo` |
 | `gptModelVersion` | The version of the GPT model to use | `0301` |
 | `searchServiceSku` | The [name of the Azure Cognitive Search service SKU](https://learn.microsoft.com/azure/templates/microsoft.search/searchservices?pivots=deployment-language-arm-template#sku-1) to use (note that this impacts certain [limits](https://learn.microsoft.com/azure/search/search-limits-quotas-capacity), for example the maximum blob size for indexers is 16 MB on the basic tier) | `basic` |
-| `initialDocumentUrls` | A space-separated list of URLs for the documents to include by default | [Resiliency-whitepaper.pdf](https://azure.microsoft.com/mediahandler/files/resourcefiles/resilience-in-azure-whitepaper/Resiliency-whitepaper.pdf) and [Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf](https://azure.microsoft.com/mediahandler/files/resourcefiles/data-residency-data-sovereignty-and-compliance-in-the-microsoft-cloud/Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf) |
+| `initialDocumentUrls` | A space-separated list of URLs for the documents to include by default | A [resiliency](https://azure.microsoft.com/mediahandler/files/resourcefiles/resilience-in-azure-whitepaper/Resiliency-whitepaper.pdf) and [compliance](https://azure.microsoft.com/mediahandler/files/resourcefiles/data-residency-data-sovereignty-and-compliance-in-the-microsoft-cloud/Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf) document |
 
 After the solution was deployed, simply browse to the App Service web app to start searching!
 
@@ -102,8 +114,8 @@ The ARM template deploys the services and sets the configuration settings for th
 | `SearchIndexNameBlobDocuments`* | The name of the search index that contains the documents | `blob-documents` |
 | `SearchIndexNameBlobChunks`* | The name of the search index that contains the document chunks | `blob-chunks` |
 | `SearchIndexerScheduleMinutes`* | The number of minutes between indexer executions in Azure Cognitive Search | `5` |
-| `InitialDocumentUrls` | A space-separated list of URLs for the documents to include by default | [Resiliency-whitepaper.pdf](https://azure.microsoft.com/mediahandler/files/resourcefiles/resilience-in-azure-whitepaper/Resiliency-whitepaper.pdf) and [Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf](https://azure.microsoft.com/mediahandler/files/resourcefiles/data-residency-data-sovereignty-and-compliance-in-the-microsoft-cloud/Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf) |
-| `DefaultSystemRoleInformation` | The default instructions for the AI model | `You are an AI assistant that helps people find information.` |
+| `InitialDocumentUrls` | A space-separated list of URLs for the documents to include by default | A [resiliency](https://azure.microsoft.com/mediahandler/files/resourcefiles/resilience-in-azure-whitepaper/Resiliency-whitepaper.pdf) and [compliance](https://azure.microsoft.com/mediahandler/files/resourcefiles/data-residency-data-sovereignty-and-compliance-in-the-microsoft-cloud/Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf) document |
+| `DefaultSystemRoleInformation` | The default instructions for the AI model | You are an AI assistant that helps people find information. |
 | `DisableUploadDocuments` | Set this to `true` to disable the functionality to upload documents, preventing uploads by users of the Web App (you can still upload documents directly to the Azure storage container if you have permissions there) | `false` |
 | `DisableResetSearchConfiguration` | Set this to `true` to disable the functionality to reset the search configuration by users of the Web App | `false` |
 
