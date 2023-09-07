@@ -33,7 +33,13 @@
         "searchServiceSku": {
             "type": "String",
             "minLength": 1,
-            "defaultValue": "basic"
+            "defaultValue": "basic",
+            "allowedValues": [
+                "basic",
+                "standard",
+                "standard2",
+                "standard3"
+            ]
         },
         "initialDocumentUrls": {
             "type": "String",
