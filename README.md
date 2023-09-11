@@ -92,7 +92,9 @@ You can of course also deploy the [ARM template](azuredeploy-webapp.json) manual
 
 ## Authentication
 
-By default, the web app is publicly accessible after deployment, which also means the document content is freely searchable. This isn't a problem for the documents that are included by default (which are public anyway), but if you're uploading your own documents you probably want to add authentication to the web app. This can easily be done by setting up the built-in [authentication and authorization feature on App Service](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization), which can make the web app accessible only by users from your own organization for example.
+By default, the web app is publicly accessible after deployment, which also means the document content is freely searchable. This isn't a problem for the documents that are included by default (which are public anyway), but if you're uploading your own documents you probably want to add authentication to the web app.
+
+This can easily be done by setting up the built-in [authentication and authorization feature on App Service](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization), which can make the web app accessible only by users from your own organization for example. If you're using Microsoft Entra ID (formerly Azure AD) as the identity provider, then you can also easily [restrict your application to a set of users](https://learn.microsoft.com/azure/active-directory/develop/howto-restrict-your-app-to-a-set-of-users), by configuring user assignment to be required.
 
 ## Configuration
 

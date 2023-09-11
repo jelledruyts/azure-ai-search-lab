@@ -2,17 +2,17 @@
 
 @if (Model != null)
 {
+    @if (string.IsNullOrWhiteSpace(Model.Error) && !Model.Answers.Any() && !Model.Captions.Any() && !Model.SearchResults.Any())
+    {
+        <div class="mt-3 alert alert-info">Sorry, there are no results for your search query!</div>
+    }
+
     @if (!string.IsNullOrWhiteSpace(Model.Error))
     {
         <div class="alert alert-danger mt-3">@Model.Error</div>
     }
 
     <div class="search-results">
-        @if (!Model.Answers.Any() && !Model.Captions.Any() && !Model.SearchResults.Any())
-        {
-            <div class="mt-3 alert alert-info">Sorry, there are no results for your search query!</div>
-        }
-
         @if (Model.Answers.Any())
         {
             <h4 class="mt-3">@Model.Answers.ToCountString("answer")</h4>
