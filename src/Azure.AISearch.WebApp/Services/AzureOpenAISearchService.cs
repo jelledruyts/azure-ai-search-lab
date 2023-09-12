@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ChatRole=Azure.AI.OpenAI.ChatRole;
 using Azure.AISearch.WebApp.Infrastructure;
 using Azure.AISearch.WebApp.Models;
 
@@ -30,28 +31,29 @@ public class AzureOpenAISearchService : ISearchService
         return new Uri(baseUrl, $"openai/deployments/{deploymentName}/{path}?api-version={this.settings.OpenAIApiVersion}");
     }
 
-    public async Task<SearchResponse?> SearchAsync(SearchRequest request)
+    public bool CanHandle(SearchRequest request)
     {
-        if (request.Engine != EngineType.AzureOpenAI)
-        {
-            return null;
-        }
+        return request.Engine == EngineType.AzureOpenAI;
+    }
+
+    public async Task<SearchResponse> SearchAsync(SearchRequest request)
+    {
         ArgumentNullException.ThrowIfNull(request.Query);
 
         var searchResponse = new SearchResponse();
         var messages = new List<ChatRequestMessage>();
-        messages.Add(new ChatRequestMessage { Role = Constants.ChatRoles.System, Content = request.SystemRoleInformation });
+        messages.Add(new ChatRequestMessage { Role = ChatRole.System.ToString(), Content = request.SystemRoleInformation });
         if (request.History != null && request.History.Any())
         {
-            var role = Constants.ChatRoles.User;
+            var role = ChatRole.User.ToString();
             foreach (var item in request.History)
             {
                 messages.Add(new ChatRequestMessage { Role = role, Content = item });
                 searchResponse.History.Add(item);
-                role = role == Constants.ChatRoles.User ? Constants.ChatRoles.Assistant : Constants.ChatRoles.User;
+                role = role == ChatRole.User.ToString() ? ChatRole.Assistant.ToString() : ChatRole.User.ToString();
             }
         }
-        messages.Add(new ChatRequestMessage { Role = Constants.ChatRoles.User, Content = request.Query });
+        messages.Add(new ChatRequestMessage { Role = ChatRole.User.ToString(), Content = request.Query });
         searchResponse.History.Add(request.Query);
         var serviceRequest = new ChatCompletionsRequest
         {
@@ -86,7 +88,7 @@ public class AzureOpenAISearchService : ISearchService
         var choice = serviceResponse.Choices.First(); // Use the first choice only.
 
         // Deserialize nested JSON content from messages produced by tools.
-        foreach (var message in choice.Messages.Where(m => string.Equals(m.Role, Constants.ChatRoles.Tool, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(m.Content)))
+        foreach (var message in choice.Messages.Where(m => string.Equals(m.Role, ChatRole.Tool.ToString(), StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(m.Content)))
         {
             message.ContentObject = JsonSerializer.Deserialize<ChatResponseMessageContent>(message.Content!);
         }

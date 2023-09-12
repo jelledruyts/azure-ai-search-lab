@@ -17,8 +17,9 @@ public class SearchRequestHandler
         {
             return null;
         }
-        // Send the request to each registered search service and return the first valid response.
-        foreach (var searchService in this.searchServices)
+        // Send the request to each registered search service that can handle the request
+        // and return the first valid response.
+        foreach (var searchService in this.searchServices.Where(s => s.CanHandle(request)))
         {
             try
             {

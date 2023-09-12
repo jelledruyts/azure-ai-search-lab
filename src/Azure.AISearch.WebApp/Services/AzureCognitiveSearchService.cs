@@ -21,12 +21,13 @@ public class AzureCognitiveSearchService : ISearchService
         this.searchServiceAdminCredential = new AzureKeyCredential(this.settings.SearchServiceAdminKey);
     }
 
-    public async Task<SearchResponse?> SearchAsync(SearchRequest request)
+    public bool CanHandle(SearchRequest request)
     {
-        if (request.Engine != EngineType.AzureCognitiveSearch)
-        {
-            return null;
-        }
+        return request.Engine == EngineType.AzureCognitiveSearch;
+    }
+
+    public async Task<SearchResponse> SearchAsync(SearchRequest request)
+    {
         var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
         var indexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks;
         var searchOptions = new SearchOptions
@@ -64,7 +65,7 @@ public class AzureCognitiveSearchService : ISearchService
             // Pass the vector as part of the search options.
             searchOptions.Vectors.Add(new SearchQueryVector
             {
-                KNearestNeighborsCount = 3,
+                KNearestNeighborsCount = request.VectorNearestNeighborsCount ?? Constants.Defaults.VectorNearestNeighborsCount,
                 Fields = { nameof(DocumentChunk.ContentVector) },
                 Value = queryEmbeddings
             });

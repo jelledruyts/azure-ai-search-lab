@@ -19,8 +19,10 @@ builder.Services.AddSingleton(appSettings);
 builder.Services.AddSingleton<AzureCognitiveSearchConfigurationService>();
 builder.Services.AddSingleton<AzureStorageConfigurationService>();
 builder.Services.AddSingleton<IEmbeddingService, AzureOpenAIEmbeddingService>();
+builder.Services.AddSingleton<AzureCognitiveSearchService>();
 builder.Services.AddSingleton<ISearchService, AzureCognitiveSearchService>();
 builder.Services.AddSingleton<ISearchService, AzureOpenAISearchService>();
+builder.Services.AddSingleton<ISearchService, SemanticKernelSearchService>();
 builder.Services.AddSingleton<SearchRequestHandler>();
 builder.Services.AddSingleton<SearchScenarioProvider>();
 

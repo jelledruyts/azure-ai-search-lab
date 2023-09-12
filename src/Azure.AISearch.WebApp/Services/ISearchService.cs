@@ -4,5 +4,6 @@ using Azure.AISearch.WebApp.Models;
 
 public interface ISearchService
 {
-    Task<SearchResponse?> SearchAsync(SearchRequest request);
+    bool CanHandle(SearchRequest request);
+    Task<SearchResponse> SearchAsync(SearchRequest request);
 }

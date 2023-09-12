@@ -13,6 +13,7 @@
     <PackageReference Include="Azure.Storage.Blobs" Version="12.17.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.20" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="0.23.230906.2-preview" />
   </ItemGroup>
 
 </Project>

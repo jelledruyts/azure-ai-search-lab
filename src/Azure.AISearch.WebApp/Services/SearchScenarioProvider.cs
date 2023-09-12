@@ -79,18 +79,6 @@ public class SearchScenarioProvider
             },
             new SearchScenario
             {
-                Id = "az-cognitivesearch-chunks-hybrid-standard",
-                DisplayName = "Azure Cognitive Search - Chunks - Hybrid - Standard",
-                Description = "This scenario uses Azure Cognitive Search to perform a hybrid (text + vector) search across the smaller chunks of the original documents, where each chunk is represented as a vector of numbers as determined by an Azure OpenAI embeddings model. The search query itself is first vectorized using the same embeddings model, and the best matching results for the search query are determined based on merging the results of the text and vector searches. The full-text search uses the standard ('simple') search mode.",
-                SearchRequest = new SearchRequest
-                {
-                    Engine = EngineType.AzureCognitiveSearch,
-                    SearchIndex = SearchIndexType.Chunks,
-                    QueryType = QueryType.HybridStandard
-                }
-            },
-            new SearchScenario
-            {
                 Id = "az-cognitivesearch-chunks-hybrid-semantic",
                 DisplayName = "Azure Cognitive Search - Chunks - Hybrid - Semantic",
                 Description = "This scenario uses Azure Cognitive Search to perform a hybrid (text + vector) search across the smaller chunks of the original documents, where each chunk is represented as a vector of numbers as determined by an Azure OpenAI embeddings model. The search query itself is first vectorized using the same embeddings model, and the best matching results for the search query are determined based on merging the results of the text and vector searches. The full-text search uses semantic search for even more accuracy with L2 reranking using the same language models that power Bing.",
@@ -110,7 +98,7 @@ public class SearchScenarioProvider
                 {
                     Engine = EngineType.AzureOpenAI,
                     DataSource = DataSourceType.None,
-                    SystemRoleInformation = this.settings.DefaultSystemRoleInformation
+                    SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation()
                 }
             },
             new SearchScenario
@@ -122,10 +110,23 @@ public class SearchScenarioProvider
                 {
                     Engine = EngineType.AzureOpenAI,
                     DataSource = DataSourceType.AzureCognitiveSearch,
-                    SystemRoleInformation = this.settings.DefaultSystemRoleInformation,
+                    SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation(),
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
-                    QueryType = QueryType.TextSemantic, // As a built-in scenario, always use semantic search for best results
+                    QueryType = QueryType.HybridSemantic, // As a built-in scenario, always use semantic search for best results
                     LimitToDataSource = true
+                }
+            },
+            new SearchScenario
+            {
+                Id = "az-customorchestration-chunks-hybrid-semantic",
+                DisplayName = "Custom Orchestration - Chunks - Hybrid - Semantic",
+                Description = "This scenario first uses Azure Cognitive Search to perform a hybrid (text + vector) semantic search across the smaller chunks of the original documents. It then uses those search results along with the original query to build a prompt for an AI model to generate an answer (with citations).",
+                SearchRequest = new SearchRequest
+                {
+                    Engine = EngineType.CustomOrchestration,
+                    CustomOrchestrationPrompt = this.settings.GetDefaultCustomOrchestrationPrompt(),
+                    SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
+                    QueryType = QueryType.HybridSemantic // As a built-in scenario, always use semantic search for best results
                 }
             }
         };

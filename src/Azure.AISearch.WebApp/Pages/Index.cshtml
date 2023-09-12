@@ -60,6 +60,11 @@
                         <label class="form-check-label" for="searchRequest-Engine-AzureOpenAI">Azure OpenAI</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use a <a href='https://learn.microsoft.com/azure/ai-services/openai/how-to/chatgpt' target='_blank'>GPT model</a> in <a href='https://learn.microsoft.com/azure/ai-services/openai/overview' target='_blank'>Azure OpenAI</a> to perform a chat-based search experience. The responses are AI-generated rather than taken directly from the source data. When using <a href='https://learn.microsoft.com/azure/ai-services/openai/concepts/use-your-data' target='_blank'>Azure OpenAI on your data</a>, the responses can be grounded in (and even limited to) the information in a private data source."><i class="bi bi-info-circle"></i></span>
                     </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.Engine)" id="searchRequest-Engine-CustomOrchestration" value="@EngineType.CustomOrchestration" v-model="searchRequest.engine">
+                        <label class="form-check-label" for="searchRequest-Engine-CustomOrchestration">Custom orchestration</label>
+                        <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use custom orchestration to perform the <a href='https://aka.ms/what-is-rag' target='_blank'>Retrieval Augmented Generation (RAG)</a> pattern. This is using <a href='https://learn.microsoft.com/semantic-kernel/overview/' target='_blank'>Semantic Kernel</a> behind the scenes to first retrieve relevant search results from Azure Cognitive Search, and then build a prompt with those search results along with the original query to generate an answer (with citations)."><i class="bi bi-info-circle"></i></span>
+                    </div>
                 </div>
             </div>
 
@@ -67,6 +72,12 @@
                 <label class="form-label" for="searchRequest-SystemRoleInformation">System role information</label>
                 <span class="info-tip" data-bs-toggle="popover" data-bs-content="Give the model instructions about how it should behave and any context it should reference when generating a response. You can describe the assistant's personality, tell it what it should and shouldn't answer, and tell it how to format responses."><i class="bi bi-info-circle"></i></span>
                 <input type="text" class="form-control" name="@nameof(SearchRequest.SystemRoleInformation)" id="searchRequest-SystemRoleInformation" v-model="searchRequest.systemRoleInformation">
+            </div>
+
+            <div class="mb-2" v-show="searchRequest.engine == '@EngineType.CustomOrchestration'">
+                <label class="form-label" for="searchRequest-SystemRoleInformation">Prompt template</label>
+                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Define the prompt that will be sent to the AI model. Use <code>{{$query}}</code> to refer to the original query and <code>{{$sources}}</code> to refer to the relevant data sources as retrieved from Azure Cognitive Search."><i class="bi bi-info-circle"></i></span>
+                <textarea class="form-control" name="@nameof(SearchRequest.CustomOrchestrationPrompt)" id="searchRequest-CustomOrchestrationPrompt" v-model="searchRequest.customOrchestrationPrompt" rows="10"></textarea>
             </div>
 
             <div class="mb-2" v-show="searchRequest.engine == '@EngineType.AzureOpenAI'">
@@ -135,6 +146,81 @@
                         <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndex == '@SearchIndexType.Documents'">
                         <label class="form-check-label" for="searchRequest-QueryType-HybridSemantic">Semantic hybrid (text + vector)</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Combine the results of a <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector search</a> with <a href='https://learn.microsoft.com/azure/search/semantic-search-overview' target='_blank'>semantic search</a> results into a single ranked response. Compared to standard hybrid search, this provides even more accuracy with L2 reranking using the same language models that power Bing."><i class="bi bi-info-circle"></i></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2" v-show="!(searchRequest.engine == '@EngineType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.None') && (searchRequest.queryType == '@QueryType.Vector' || searchRequest.queryType == '@QueryType.HybridStandard' || searchRequest.queryType == '@QueryType.HybridSemantic')">
+                <label class="form-label">Vector parameters</label>
+                <div class="row row-cols-lg-auto g-3 align-items-center">
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Nearest neighbors
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of nearest neighbors to return from vector search. When using semantic search, this should be set to a high enough number in order to get sufficient candidates for semantic reranking."><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="number" class="form-control form-control-small" name="@nameof(SearchRequest.VectorNearestNeighborsCount)" value="@Model.SearchRequest.VectorNearestNeighborsCount" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-2" v-show="searchRequest.engine == '@EngineType.CustomOrchestration'">
+                <label class="form-label">Model parameters</label>
+                <div class="row row-cols-lg-auto g-3 align-items-center">
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Max tokens
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Set a limit on the number of tokens that the model will use to generate the response, to avoid running into token limitations (as token size is counted against the combined prompt and response). One token is roughly 4 characters for typical English text."><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="text" class="form-control form-control-small" name="@nameof(SearchRequest.MaxTokens)" value="@Model.SearchRequest.MaxTokens">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Temperature
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Controls randomness. Lowering the temperature means that the model will produce more repetitive and deterministic responses. Increasing the temperature will result in more unexpected or creative responses. Try adjusting temperature or <code>Top P</code> but not both. <a href='https://learn.microsoft.com/azure/ai-services/openai/how-to/completions' target='_blank'>Learn more.</a>"><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="text" class="form-control form-control-small" name="@nameof(SearchRequest.Temperature)" value="@Model.SearchRequest.Temperature">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Top P
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Similar to temperature, this controls randomness but uses a different method. Lowering <code>Top P</code> will narrow the model's token selection to likelier tokens. Increasing <code>Top P</code> will let the model choose from tokens with both high and low likelihood. Try adjusting temperature or <code>Top P</code> but not both. <a href='https://learn.microsoft.com/azure/ai-services/openai/how-to/completions' target='_blank'>Learn more.</a>"><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="text" class="form-control form-control-small" name="@nameof(SearchRequest.TopP)" value="@Model.SearchRequest.TopP">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Frequency penalty
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Reduce the chance of repeating a token proportionally based on how often it has appeared in the text so far. This decreases the likelihood of repeating the exact same text in a response. <a href='https://platform.openai.com/docs/guides/gpt/parameter-details' target='_blank'>Learn more.</a>"><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="text" class="form-control form-control-small" name="@nameof(SearchRequest.FrequencyPenalty)" value="@Model.SearchRequest.FrequencyPenalty">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Presence penalty
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Reduce the chance of repeating any token that has appeared in the text at all so far. This increases the likelihood of introducing new topics in a response. <a href='https://platform.openai.com/docs/guides/gpt/parameter-details' target='_blank'>Learn more.</a>"><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="text" class="form-control form-control-small" name="@nameof(SearchRequest.PresencePenalty)" value="@Model.SearchRequest.PresencePenalty">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Stop sequences
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Make the model end its response at a desired point. The model response will end before the specified sequence, so it won't contain the stop sequence text. For ChatGPT, using <code>&lt;|im_end|&gt;</code> ensures that the model response doesn't generate a follow-up user query. You can include as many as four stop sequences, separated by commas."><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="text" class="form-control" name="@nameof(SearchRequest.StopSequences)" value="@Model.SearchRequest.StopSequences">
+                        </div>
                     </div>
                 </div>
             </div>

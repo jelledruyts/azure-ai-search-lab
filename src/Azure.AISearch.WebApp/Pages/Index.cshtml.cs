@@ -22,7 +22,8 @@ public class IndexModel : PageModel
         this.Scenarios = this.searchScenarioProvider.GetSearchScenarios();
         this.SearchRequest = new SearchRequest
         {
-            SystemRoleInformation = this.settings.DefaultSystemRoleInformation
+            SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation(),
+            CustomOrchestrationPrompt = this.settings.GetDefaultCustomOrchestrationPrompt()
         };
     }
 

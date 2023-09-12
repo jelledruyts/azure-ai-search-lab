@@ -26,3 +26,7 @@ cite {
 .info-tip {
     margin-left: .5rem;
 }
+
+.form-control-small {
+    width: 5rem !important;
+}

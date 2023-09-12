@@ -357,10 +357,10 @@ public class AzureCognitiveSearchConfigurationService
                     {
                         Parameters = new HnswParameters
                         {
-                            M = 4,
-                            EfConstruction = 400,
-                            EfSearch = 500,
-                            Metric = VectorSearchAlgorithmMetric.Cosine
+                            M = Constants.Defaults.HnswParametersM,
+                            EfConstruction = Constants.Defaults.HnswParametersEfConstruction,
+                            EfSearch = Constants.Defaults.HnswParametersEfSearch,
+                            Metric = Constants.Defaults.HnswParametersMetric
                         }
                     }
                 }
