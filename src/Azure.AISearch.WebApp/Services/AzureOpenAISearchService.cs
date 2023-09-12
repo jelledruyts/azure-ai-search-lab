@@ -1,34 +1,28 @@
+// TODO: This doesn't work today, the API returns messages including the
+// citations messages we need, but the title and filepath etc are null
+// so it seems the field mappings aren't fully working (perhaps because
+// the serialized names are wrong? ContentFieldNames is serialized as
+// "contentFieldNames" but UrlFieldName as "urlField" for exampel).
+
 using System.Text.Json;
-using ChatRole=Azure.AI.OpenAI.ChatRole;
-using Azure.AISearch.WebApp.Infrastructure;
+using System.Text.Json.Serialization;
+using Azure.AI.OpenAI;
 using Azure.AISearch.WebApp.Models;
+using AzureCognitiveSearchQueryType = Azure.AI.OpenAI.AzureCognitiveSearchQueryType;
 
 namespace Azure.AISearch.WebApp.Services;
 
 public class AzureOpenAISearchService : ISearchService
 {
     private readonly AppSettings settings;
-    private readonly IHttpClientFactory httpClientFactory;
-    private readonly Uri chatCompletionUrl;
-    private readonly Uri extensionChatCompletionUrl;
-    private readonly Uri embeddingsUrl;
+    private readonly OpenAIClient client;
 
     public AzureOpenAISearchService(AppSettings settings, IHttpClientFactory httpClientFactory)
     {
+        ArgumentNullException.ThrowIfNull(settings.OpenAIApiKey);
         ArgumentNullException.ThrowIfNull(settings.OpenAIEndpoint);
-        ArgumentNullException.ThrowIfNull(settings.OpenAIGptDeployment);
-        ArgumentNullException.ThrowIfNull(settings.OpenAIEmbeddingDeployment);
         this.settings = settings;
-        this.httpClientFactory = httpClientFactory;
-        var baseUrl = new Uri(this.settings.OpenAIEndpoint);
-        this.chatCompletionUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIGptDeployment, "chat/completions");
-        this.extensionChatCompletionUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIGptDeployment, "extensions/chat/completions");
-        this.embeddingsUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIEmbeddingDeployment, "embeddings");
-    }
-
-    private Uri GetAzureOpenAIUrl(Uri baseUrl, string deploymentName, string path)
-    {
-        return new Uri(baseUrl, $"openai/deployments/{deploymentName}/{path}?api-version={this.settings.OpenAIApiVersion}");
+        this.client = new OpenAIClient(new Uri(this.settings.OpenAIEndpoint), new AzureKeyCredential(this.settings.OpenAIApiKey));
     }
 
     public bool CanHandle(SearchRequest request)
@@ -41,62 +35,39 @@ public class AzureOpenAISearchService : ISearchService
         ArgumentNullException.ThrowIfNull(request.Query);
 
         var searchResponse = new SearchResponse();
-        var messages = new List<ChatRequestMessage>();
-        messages.Add(new ChatRequestMessage { Role = ChatRole.System.ToString(), Content = request.SystemRoleInformation });
+        var chatCompletionsOptions = new ChatCompletionsOptions();
+        chatCompletionsOptions.Messages.Add(new ChatMessage(ChatRole.System, request.SystemRoleInformation));
+
         if (request.History != null && request.History.Any())
         {
-            var role = ChatRole.User.ToString();
+            var role = ChatRole.User;
             foreach (var item in request.History)
             {
-                messages.Add(new ChatRequestMessage { Role = role, Content = item });
+                chatCompletionsOptions.Messages.Add(new ChatMessage(role, item));
                 searchResponse.History.Add(item);
-                role = role == ChatRole.User.ToString() ? ChatRole.Assistant.ToString() : ChatRole.User.ToString();
+                role = role == ChatRole.User ? ChatRole.Assistant : ChatRole.User;
             }
         }
-        messages.Add(new ChatRequestMessage { Role = ChatRole.User.ToString(), Content = request.Query });
+        chatCompletionsOptions.Messages.Add(new ChatMessage(ChatRole.User, request.Query));
         searchResponse.History.Add(request.Query);
-        var serviceRequest = new ChatCompletionsRequest
-        {
-            Messages = messages
-        };
 
         if (request.DataSource == DataSourceType.AzureCognitiveSearch)
         {
-            serviceRequest.DataSources = new[] { GetAzureCognitiveSearchDataSource(request) };
+            chatCompletionsOptions.AzureExtensionsOptions = new AzureChatExtensionsOptions
+            {
+                Extensions = { GetAzureCognitiveSearchDataSource(request) }
+            };
         }
 
-        var httpClient = this.httpClientFactory.CreateClient();
-        httpClient.DefaultRequestHeaders.Add("api-key", this.settings.OpenAIApiKey);
-        httpClient.DefaultRequestHeaders.Add("chatgpt_url", this.chatCompletionUrl.ToString());
-        httpClient.DefaultRequestHeaders.Add("chatgpt_key", this.settings.OpenAIApiKey);
-        // NOTE: PostAsJsonAsync doesn't work for some reason and only for OpenAI "On Your Data",
-        // where it results in HTTP 500 "Response payload is not completed".
-        // var serviceResponseMessage = await httpClient.PostAsJsonAsync(serviceRequestUrl, serviceRequest);
-        var serviceRequestUrl = request.DataSource == DataSourceType.None ? this.chatCompletionUrl : this.extensionChatCompletionUrl;
-        var serviceResponseMessage = await httpClient.PostAsync(serviceRequestUrl, new StringContent(JsonSerializer.Serialize(serviceRequest, JsonConfiguration.DefaultJsonOptions), System.Text.Encoding.UTF8, "application/json"));
-        if (!serviceResponseMessage.IsSuccessStatusCode)
-        {
-            searchResponse.Error = await serviceResponseMessage.Content.ReadAsStringAsync();
-            return searchResponse;
-        }
-        var serviceResponse = await serviceResponseMessage.Content.ReadFromJsonAsync<ChatCompletionsResponse>();
+        var serviceResponse = await this.client.GetChatCompletionsAsync(this.settings.OpenAIGptDeployment, chatCompletionsOptions);
 
-        if (serviceResponse == null || !serviceResponse.Choices.Any())
+        if (serviceResponse == null || !serviceResponse.Value.Choices.Any())
         {
             throw new InvalidOperationException("Azure OpenAI didn't return a meaningful response.");
         }
-        var choice = serviceResponse.Choices.First(); // Use the first choice only.
+        var answerMessage = serviceResponse.Value.Choices.First().Message; // Use the first choice only.
 
-        // Deserialize nested JSON content from messages produced by tools.
-        foreach (var message in choice.Messages.Where(m => string.Equals(m.Role, ChatRole.Tool.ToString(), StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(m.Content)))
-        {
-            message.ContentObject = JsonSerializer.Deserialize<ChatResponseMessageContent>(message.Content!);
-        }
-
-        // In the standard case, the answer is the one and only message.
-        // If we're using the "On Your Data" service, we need to find the message that indicates the end of the turn.
-        // This is the message that contains the answer.
-        var answerText = choice.Message?.Content ?? choice.Messages.Where(m => m.EndTurn == true).SingleOrDefault()?.Content;
+        var answerText = answerMessage.Content;
         if (answerText == null)
         {
             throw new InvalidOperationException("Azure OpenAI didn't return a meaningful response.");
@@ -104,53 +75,59 @@ public class AzureOpenAISearchService : ISearchService
 
         // Process citations within the answer, which take the form "[doc1][doc2]..." and refer to the (1-based) index of
         // the citations in the tool message.
-        var citationsMessage = choice.Messages.OrderByDescending(m => m.Index).Where(m => m.ContentObject?.Citations != null && m.ContentObject.Citations.Any()).FirstOrDefault();
-        if (citationsMessage != null)
+        foreach (var extensionMessage in answerMessage.AzureExtensionsContext.Messages.Where(m => m.Role == ChatRole.Tool))
         {
-            var citations = citationsMessage.ContentObject!.Citations;
-            var citationIndex = 0;
-            foreach (var citation in citations)
+            Console.WriteLine(extensionMessage.Content);
+            var content = JsonSerializer.Deserialize<ChatResponseMessageContent>(extensionMessage.Content!);
+            if (content?.Citations != null && content.Citations.Any())
             {
-                answerText = answerText.Replace($"[doc{++citationIndex}]", $"<cite>{citation.Title}</cite>", StringComparison.OrdinalIgnoreCase);
-                searchResponse.SearchResults.Add(new SearchResult
+                var citationIndex = 0;
+                foreach (var citation in content.Citations)
                 {
-                    DocumentId = citation.Id,
-                    DocumentTitle = citation.Title,
-                    Captions = string.IsNullOrWhiteSpace(citation.Content) ? Array.Empty<string>() : new[] { citation.Content }
-                });
+                    // TODO: citation title etc are null here!
+                    answerText = answerText.Replace($"[doc{++citationIndex}]", $"<cite>{citation.Title}</cite>", StringComparison.OrdinalIgnoreCase);
+                    searchResponse.SearchResults.Add(new SearchResult
+                    {
+                        DocumentId = citation.Id,
+                        DocumentTitle = citation.Title,
+                        Captions = string.IsNullOrWhiteSpace(citation.Content) ? Array.Empty<string>() : new[] { citation.Content }
+                    });
+                }
+                // Stop looping through the tool messages once we find the first one holding the citations.
+                break;
             }
         }
+
         searchResponse.Answers = new[] { new SearchAnswer { Text = answerText } };
         searchResponse.History.Add(answerText);
         return searchResponse;
     }
 
-    private DataSource GetAzureCognitiveSearchDataSource(SearchRequest request)
+    private AzureCognitiveSearchChatExtensionConfiguration GetAzureCognitiveSearchDataSource(SearchRequest request)
     {
+        ArgumentNullException.ThrowIfNull(this.settings.SearchServiceUrl);
+        ArgumentNullException.ThrowIfNull(this.settings.SearchServiceAdminKey);
+        ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
+        ArgumentNullException.ThrowIfNull(this.settings.OpenAIApiKey);
         var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
-        return new DataSource
+        return new AzureCognitiveSearchChatExtensionConfiguration
         {
-            Type = "AzureCognitiveSearch",
-            Parameters = new AzureCognitiveSearchParameters
+            SearchEndpoint = new Uri(this.settings.SearchServiceUrl),
+            SearchKey = new AzureKeyCredential(this.settings.SearchServiceAdminKey),
+            IndexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks,
+            FieldMappingOptions = new AzureCognitiveSearchIndexFieldMappingOptions
             {
-                Endpoint = this.settings.SearchServiceUrl,
-                Key = this.settings.SearchServiceAdminKey,
-                IndexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks,
-                FieldsMapping = new AzureCognitiveSearchParametersFieldsMapping
-                {
-                    ContentFields = new[] { useDocumentsIndex ? nameof(Document.Content) : nameof(DocumentChunk.Content) },
-                    TitleField = useDocumentsIndex ? nameof(Document.Title) : nameof(DocumentChunk.SourceDocumentTitle),
-                    UrlField = useDocumentsIndex ? nameof(Document.FilePath) : nameof(DocumentChunk.SourceDocumentFilePath),
-                    FilepathField = useDocumentsIndex ? nameof(Document.FilePath) : nameof(DocumentChunk.SourceDocumentFilePath),
-                    VectorFields = useDocumentsIndex ? Array.Empty<string>() : new[] { nameof(DocumentChunk.ContentVector) }
-                },
-                InScope = request.LimitToDataSource, // Limit responses to data from the data source only
-                QueryType = GetQueryType(request),
-                SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
-                RoleInformation = request.SystemRoleInformation,
-                EmbeddingEndpoint = request.IsVectorSearch ? this.embeddingsUrl.ToString() : null,
-                EmbeddingKey = request.IsVectorSearch ? this.settings.OpenAIApiKey : null
-            }
+                ContentFieldNames = { useDocumentsIndex ? nameof(Document.Content) : nameof(DocumentChunk.Content) },
+                TitleFieldName = useDocumentsIndex ? nameof(Document.Title) : nameof(DocumentChunk.SourceDocumentTitle),
+                UrlFieldName = useDocumentsIndex ? nameof(Document.FilePath) : nameof(DocumentChunk.SourceDocumentFilePath),
+                FilepathFieldName = useDocumentsIndex ? nameof(Document.FilePath) : nameof(DocumentChunk.SourceDocumentFilePath),
+                VectorFieldNames = { useDocumentsIndex ? null : nameof(DocumentChunk.ContentVector) }
+            },
+            ShouldRestrictResultScope = request.LimitToDataSource, // Limit responses to data from the data source only
+            QueryType = GetQueryType(request),
+            SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
+            EmbeddingEndpoint = request.IsVectorSearch ? new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIEmbeddingDeployment}/embeddings?api-version={this.settings.OpenAIApiVersion}") : null,
+            EmbeddingKey = request.IsVectorSearch ? new AzureKeyCredential(this.settings.OpenAIApiKey) : null
         };
     }
 
@@ -158,27 +135,69 @@ public class AzureOpenAISearchService : ISearchService
     {
         if (request.QueryType == QueryType.TextStandard)
         {
-            return AzureCognitiveSearchQueryType.simple;
+            return AzureCognitiveSearchQueryType.Simple;
         }
         else if (request.QueryType == QueryType.TextSemantic)
         {
-            return AzureCognitiveSearchQueryType.semantic;
+            return AzureCognitiveSearchQueryType.Semantic;
         }
         else if (request.QueryType == QueryType.Vector)
         {
-            return AzureCognitiveSearchQueryType.vector;
+            return AzureCognitiveSearchQueryType.Vector;
         }
         else if (request.QueryType == QueryType.HybridStandard)
         {
-            return AzureCognitiveSearchQueryType.vectorSimpleHybrid;
+            return AzureCognitiveSearchQueryType.VectorSimpleHybrid;
         }
         else if (request.QueryType == QueryType.HybridSemantic)
         {
-            return AzureCognitiveSearchQueryType.vectorSemanticHybrid;
+            return AzureCognitiveSearchQueryType.VectorSemanticHybrid;
         }
         else
         {
             throw new NotSupportedException($"Unsupported query type \"{request.QueryType}\".");
         }
+    }
+
+    // These model classes are based on the Azure OpenAI playground and samples
+    // to use while waiting for .NET SDK support.
+
+    private class ChatResponseMessageContent
+    {
+        [JsonPropertyName("citations")]
+        public IList<Citation> Citations { get; set; } = new List<Citation>();
+
+        [JsonPropertyName("intent")]
+        public string? Intent { get; set; } // This seems to be yet another nested JSON object, as an array of strings
+    }
+
+    private class Citation
+    {
+        [JsonPropertyName("content")]
+        public string? Content { get; set; }
+
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("filepath")]
+        public string? Filepath { get; set; }
+
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
+
+        [JsonPropertyName("metadata")]
+        public CitationMetadata Metadata { get; set; } = new CitationMetadata();
+
+        [JsonPropertyName("chunk_id")]
+        public string? ChunkId { get; set; }
+    }
+
+    private class CitationMetadata
+    {
+        [JsonPropertyName("chunking")]
+        public string? Chunking { get; set; }
     }
 }
