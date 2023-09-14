@@ -6,7 +6,13 @@ This project provides a very easy to use learning and experimentation playground
 
 By default, a few documents are added automatically to allow you to use the application directly. You're encouraged to upload your own documents (which you can also easily do via the web app) so you can experiment with searching over your own content.
 
-There are a number of related and somewhat similar projects, most notably [ChatGPT + Enterprise data with Azure OpenAI and Cognitive Search](https://github.com/Azure-Samples/azure-search-openai-demo) and [Sample Chat App with Azure OpenAI](https://github.com/Microsoft/sample-app-aoai-chatGPT). The main differentiators for this project however are that it's extremely [easy to set up](#deployment) and that it's aimed to be a *teaching and experimentation app*, rather than a sample focusing on just one service or scenario, or showing how you can build a realistic production-ready service yourself.
+There are a number of related and somewhat similar projects, most notably the following:
+
+- [ChatGPT + Enterprise data with Azure OpenAI and Cognitive Search](https://github.com/Azure-Samples/azure-search-openai-demo)
+- [Azure Chat Solution Accelerator powered by Azure Open AI Service](https://github.com/microsoft/azurechat)
+- [Sample Chat App with Azure OpenAI](https://github.com/Microsoft/sample-app-aoai-chatGPT)
+
+The main differentiators for this project however are that it's extremely [easy to set up](#deployment) and that it's aimed to be a *teaching and experimentation app*, rather than a sample focusing on just one service or scenario, or showing how you can build a realistic production-ready service yourself.
 
 **Learn about different options and fire off a search query:**
 
@@ -71,7 +77,7 @@ This means the following Azure region and model combinations are currently suppo
 
 Once you've decided on a region, you can deploy the solution with its default parameters, or change these for your specific needs.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fjelledruyts%2Fazure-ai-search-playground%2Fmain%2Fazuredeploy-webapp.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fjelledruyts%2Fazure-ai-search-playground%2Fmain%2Fazuredeploy.json)
 
 The following deployment parameters are used:
 
@@ -88,7 +94,7 @@ The following deployment parameters are used:
 
 After the solution was deployed, simply browse to the App Service web app to start searching!
 
-You can of course also deploy the [ARM template](azuredeploy-webapp.json) manually, and if you intend to run the web app locally then you can use the [`azuredeploy-webapp.ps1` PowerShell script](azuredeploy-webapp.json) to deploy the ARM template and automatically populate the required ASP.NET Core user secrets for the local web app.
+You can of course also deploy the [ARM template](azuredeploy.json) manually, and if you intend to run the web app locally then you can use the [`azuredeploy.ps1` PowerShell script](azuredeploy.ps1) to deploy the ARM template and automatically populate the required ASP.NET Core user secrets for the local web app.
 
 ## Authentication
 

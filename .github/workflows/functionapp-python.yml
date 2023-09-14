@@ -1,0 +1,30 @@
+name: Publish Function App Python container image to GitHub
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+    paths:
+    - 'src/Azure.AISearch.FunctionApp.Python/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build Docker Image
+      run: docker build --no-cache -t jelledruyts/azure-aisearch-functionapp-python:latest -f ./src/Azure.AISearch.FunctionApp.Python/Dockerfile ./src/Azure.AISearch.FunctionApp.Python
+    - name: Push Docker Image to GitHub
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        docker tag jelledruyts/azure-aisearch-functionapp-python:latest ghcr.io/jelledruyts/azure-aisearch-functionapp-python:latest
+        docker tag jelledruyts/azure-aisearch-functionapp-python:latest ghcr.io/jelledruyts/azure-aisearch-functionapp:latest
+        docker push ghcr.io/jelledruyts/azure-aisearch-functionapp-python:latest

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Azure_AISearch_FunctionApp": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7000",
+      "launchBrowser": false
+    }
+  }
+}

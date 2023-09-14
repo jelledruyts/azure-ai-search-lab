@@ -52,7 +52,8 @@
         "storageAccountName": "[concat(parameters('resourcePrefix'), uniquestring(resourceGroup().id), 'stg')]",
         "openaiServiceName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-openai')]",
         "functionPlanName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-func-plan')]",
-        "functionAppName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-func-app')]",
+        "functionAppNamePython": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-func-app-python')]",
+        "functionAppNameDotNet": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-func-app-dotnet')]",
         "functionApiKey": "[concat(uniquestring(resourceGroup().id), '-', uniqueString(deployment().name))]",
         "webPlanName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-web-plan')]",
         "webAppName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-web-app')]",
@@ -177,7 +178,7 @@
         {
             "apiVersion": "2022-09-01",
             "type": "Microsoft.Web/sites",
-            "name": "[variables('functionAppName')]",
+            "name": "[variables('functionAppNamePython')]",
             "location": "[resourceGroup().location]",
             "kind": "functionapp",
             "dependsOn": [
@@ -188,7 +189,7 @@
             "properties": {
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
                 "siteConfig": {
-                    "linuxFxVersion": "DOCKER|ghcr.io/jelledruyts/azure-aisearch-functionapp:latest",
+                    "linuxFxVersion": "DOCKER|ghcr.io/jelledruyts/azure-aisearch-functionapp-python:latest",
                     "appSettings": [
                         {
                             "name": "FUNCTIONS_EXTENSION_VERSION",
@@ -243,6 +244,78 @@
             }
         },
         {
+            "apiVersion": "2022-09-01",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('functionAppNameDotNet')]",
+            "location": "[resourceGroup().location]",
+            "kind": "functionapp",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
+            ],
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
+                "siteConfig": {
+                    "linuxFxVersion": "DOCKER|ghcr.io/jelledruyts/azure-aisearch-functionapp-dotnet:latest",
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~4"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        },
+                        {
+                            "name": "AzureWebJobsFeatureFlags",
+                            "value": "EnableWorkerIndexing"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-09-01').keys[0].value,';EndpointSuffix=core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                            "value": "false"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName')), '2020-02-02').InstrumentationKey]"
+                        },
+                        {
+                            "name": "OpenAIEndpoint",
+                            "value": "[concat('https://', variables('openaiServiceName'), '.openai.azure.com')]"
+                        },
+                        {
+                            "name": "OpenAIApiKey",
+                            "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', variables('openaiServiceName')), '2021-10-01').key1]"
+                        },
+                        {
+                            "name": "TextEmbedderFunctionApiKey",
+                            "value": "[variables('functionApiKey')]"
+                        },
+                        {
+                            "name": "SearchServiceUrl",
+                            "value": "[concat('https://', variables('searchServiceName'), '.search.windows.net')]"
+                        },
+                        {
+                            "name": "SearchServiceAdminKey",
+                            "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2022-09-01').primaryKey]"
+                        },
+                        {
+                            "name": "SearchIndexNameBlobChunks",
+                            "value": "[variables('searchIndexNameBlobChunks')]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
             "type": "Microsoft.Search/searchServices",
             "apiVersion": "2021-04-01-Preview",
             "name": "[variables('searchServiceName')]",
@@ -276,7 +349,8 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Web/serverfarms', variables('webPlanName'))]",
-                "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionAppNamePython'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionAppNameDotNet'))]",
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
                 "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]",
                 "[resourceId('Microsoft.Search/searchServices', variables('searchServiceName'))]"
@@ -334,8 +408,12 @@
                             "value": "[variables('storageContainerNameBlobChunks')]"
                         },
                         {
-                            "name": "TextEmbedderFunctionEndpoint",
-                            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2022-09-01').defaultHostName, '/api/chunk-embed')]"
+                            "name": "TextEmbedderFunctionEndpointPython",
+                            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppNamePython')), '2022-09-01').defaultHostName, '/api/chunk-embed')]"
+                        },
+                        {
+                            "name": "TextEmbedderFunctionEndpointDotNet",
+                            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppNameDotNet')), '2022-09-01').defaultHostName, '/api/ChunkEmbedPush')]"
                         },
                         {
                             "name": "TextEmbedderFunctionApiKey",
@@ -435,9 +513,13 @@
             "type": "string",
             "value": "[variables('storageContainerNameBlobChunks')]"
         },
-        "textEmbedderFunctionEndpoint": {
+        "textEmbedderFunctionEndpointPython": {
             "type": "string",
-            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2022-09-01').defaultHostName, '/api/chunk-embed')]"
+            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppNamePython')), '2022-09-01').defaultHostName, '/api/chunk-embed')]"
+        },
+        "textEmbedderFunctionEndpointDotNet": {
+            "type": "string",
+            "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppNameDotNet')), '2022-09-01').defaultHostName, '/api/ChunkEmbedPush')]"
         },
         "textEmbedderFunctionApiKey": {
             "type": "string",

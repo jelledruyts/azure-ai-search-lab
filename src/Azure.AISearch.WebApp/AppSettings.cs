@@ -11,7 +11,8 @@ public class AppSettings
     public string? StorageAccountConnectionString { get; set; }
     public string? StorageContainerNameBlobDocuments { get; set; }
     public string? StorageContainerNameBlobChunks { get; set; }
-    public string? TextEmbedderFunctionEndpoint { get; set; }
+    public string? TextEmbedderFunctionEndpointPython { get; set; }
+    public string? TextEmbedderFunctionEndpointDotNet { get; set; }
     public string? TextEmbedderFunctionApiKey { get; set; }
     public int? TextEmbedderNumTokens { get; set; } // If unspecified, will use the default as configured in the text embedder Function App.
     public int? TextEmbedderTokenOverlap { get; set; } // If unspecified, will use the default as configured in the text embedder Function App.

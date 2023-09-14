@@ -192,7 +192,7 @@ public class AzureCognitiveSearchConfigurationService
         {
             Skills =
             {
-                new WebApiSkill(Array.Empty<InputFieldMappingEntry>(), Array.Empty<OutputFieldMappingEntry>(), this.settings.TextEmbedderFunctionEndpoint)
+                new WebApiSkill(Array.Empty<InputFieldMappingEntry>(), Array.Empty<OutputFieldMappingEntry>(), this.settings.TextEmbedderFunctionEndpointPython)
                 {
                     Name = "chunking-embedding-skill",
                     Context = $"/document/{nameof(Document.Content)}",
@@ -210,6 +210,8 @@ public class AzureCognitiveSearchConfigurationService
                         new InputFieldMappingEntry("document_id") { Source = $"/document/{nameof(Document.Id)}" },
                         // Pass the document content as the text to chunk and created the embeddings for.
                         new InputFieldMappingEntry("text") { Source = $"/document/{nameof(Document.Content)}" },
+                        // Pass the document title.
+                        new InputFieldMappingEntry("title") { Source = $"/document/{nameof(Document.Title)}" },
                         // Pass the document file path.
                         new InputFieldMappingEntry("filepath") { Source = $"/document/{nameof(Document.FilePath)}" },
                         // Pass the field name as a string literal.
