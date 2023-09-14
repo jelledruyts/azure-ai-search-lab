@@ -21,6 +21,7 @@ public class AppSettings
     public string? SearchServiceAdminKey { get; set; }
     public string? SearchIndexNameBlobDocuments { get; set; }
     public string? SearchIndexNameBlobChunks { get; set; }
+    public string? SearchIndexerSkillType { get; set; } // If unspecified, will use the "pull" model.
     public int? SearchIndexerScheduleMinutes { get; set; } // If unspecified, will be set to 5 minutes.
     public string? InitialDocumentUrls { get; set; }
     public string? DefaultSystemRoleInformation { get; set; }

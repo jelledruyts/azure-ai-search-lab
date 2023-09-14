@@ -66,6 +66,7 @@
         "textEmbedderMinChunkSize": 10,
         "searchIndexNameBlobDocuments": "blob-documents",
         "searchIndexNameBlobChunks": "blob-chunks",
+        "searchIndexerSkillType": "",
         "searchIndexerScheduleMinutes": 5,
         "defaultSystemRoleInformation": "",
         "defaultCustomOrchestrationPrompt": "",
@@ -448,6 +449,10 @@
                             "value": "[variables('searchIndexNameBlobChunks')]"
                         },
                         {
+                            "name": "SearchIndexerSkillType",
+                            "value": "[variables('searchIndexerSkillType')]"
+                        },
+                        {
                             "name": "SearchIndexerScheduleMinutes",
                             "value": "[variables('searchIndexerScheduleMinutes')]"
                         },
@@ -552,6 +557,10 @@
         "searchIndexNameBlobChunks": {
             "type": "string",
             "value": "[variables('searchIndexNameBlobChunks')]"
+        },
+        "searchIndexerSkillType": {
+            "type": "string",
+            "value": "[variables('searchIndexerSkillType')]"
         },
         "searchIndexerScheduleMinutes": {
             "type": "int",

@@ -121,6 +121,7 @@ The ARM template deploys the services and sets the configuration settings for th
 | `TextEmbedderMinChunkSize` | The minimum number of tokens of a chunk (smaller chunks are excluded) | `10` |
 | `SearchIndexNameBlobDocuments`* | The name of the search index that contains the documents | `blob-documents` |
 | `SearchIndexNameBlobChunks`* | The name of the search index that contains the document chunks | `blob-chunks` |
+| `SearchIndexerSkillType`* | The type of chunking and embedding skill to use as part of the documents indexer: `pull` uses a [knowledge store](https://learn.microsoft.com/azure/search/knowledge-store-concept-intro) to store the chunk data in blobs and a separate indexer to pull these into the document chunks index; `push` directly uploads the data from the custom skill into the document chunks index | `pull` |
 | `SearchIndexerScheduleMinutes`* | The number of minutes between indexer executions in Azure Cognitive Search | `5` |
 | `InitialDocumentUrls` | A space-separated list of URLs for the documents to include by default | A [resiliency](https://azure.microsoft.com/mediahandler/files/resourcefiles/resilience-in-azure-whitepaper/Resiliency-whitepaper.pdf) and [compliance](https://azure.microsoft.com/mediahandler/files/resourcefiles/data-residency-data-sovereignty-and-compliance-in-the-microsoft-cloud/Data_Residency_Data_Sovereignty_Compliance_Microsoft_Cloud.pdf) document |
 | `DefaultSystemRoleInformation` | The default instructions for the AI model | "You are an AI assistant that helps people find information." |

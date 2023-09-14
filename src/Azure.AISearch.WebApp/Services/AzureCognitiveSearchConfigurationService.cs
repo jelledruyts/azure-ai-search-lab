@@ -75,15 +75,23 @@ public class AzureCognitiveSearchConfigurationService
         };
         var indexStatistics = await this.indexClient.GetIndexStatisticsAsync(indexName);
         searchIndex.DocumentCount = indexStatistics.Value?.DocumentCount ?? 0;
-        var indexerStatus = await this.indexerClient.GetIndexerStatusAsync(GetIndexerName(indexName));
-        if (indexerStatus.Value?.LastResult == null)
+        try
         {
-            searchIndex.IndexerStatus = "Never run";
+            var indexerStatus = await this.indexerClient.GetIndexerStatusAsync(GetIndexerName(indexName));
+            if (indexerStatus.Value?.LastResult == null)
+            {
+                searchIndex.IndexerStatus = "Never run";
+            }
+            else
+            {
+                searchIndex.IndexerStatus = GetIndexerStatus(indexerStatus.Value.LastResult.Status);
+                searchIndex.IndexerLastRunTime = indexerStatus.Value.LastResult.EndTime;
+            }
         }
-        else
+        catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
         {
-            searchIndex.IndexerStatus = GetIndexerStatus(indexerStatus.Value.LastResult.Status);
-            searchIndex.IndexerLastRunTime = indexerStatus.Value.LastResult.EndTime;
+            // The indexer doesn't exist, ignore.
+            searchIndex.IndexerStatus = "Not defined";
         }
         return searchIndex;
     }
@@ -188,11 +196,13 @@ public class AzureCognitiveSearchConfigurationService
 
     private SearchIndexerSkillset GetDocumentsSearchIndexerSkillset(AppSettingsOverride? settingsOverride, string indexName, string knowledgeStoreContainerName)
     {
+        var usePullModel = UsePullModel(settingsOverride);
+        var textEmbedderFunctionEndpoint = usePullModel ? this.settings.TextEmbedderFunctionEndpointPython : this.settings.TextEmbedderFunctionEndpointDotNet;
         var skillset = new SearchIndexerSkillset(GetSkillsetName(indexName), Array.Empty<SearchIndexerSkill>())
         {
             Skills =
             {
-                new WebApiSkill(Array.Empty<InputFieldMappingEntry>(), Array.Empty<OutputFieldMappingEntry>(), this.settings.TextEmbedderFunctionEndpointPython)
+                new WebApiSkill(Array.Empty<InputFieldMappingEntry>(), Array.Empty<OutputFieldMappingEntry>(), textEmbedderFunctionEndpoint)
                 {
                     Name = "chunking-embedding-skill",
                     Context = $"/document/{nameof(Document.Content)}",
@@ -225,8 +235,12 @@ public class AzureCognitiveSearchConfigurationService
                         new OutputFieldMappingEntry("chunks") { TargetName = "chunks" }
                     }
                 }
-            },
-            KnowledgeStore = new KnowledgeStore(this.settings.StorageAccountConnectionString, Array.Empty<KnowledgeStoreProjection>())
+            }
+        };
+
+        if (usePullModel)
+        {
+            skillset.KnowledgeStore = new KnowledgeStore(this.settings.StorageAccountConnectionString, Array.Empty<KnowledgeStoreProjection>())
             {
                 Projections =
                 {
@@ -265,8 +279,8 @@ public class AzureCognitiveSearchConfigurationService
                         }
                     }
                 }
-            }
-        };
+            };
+        }
 
         // Configure any optional settings that can be overridden by the indexer rather than depending on the default
         // values in the text embedder Function App.
@@ -294,23 +308,27 @@ public class AzureCognitiveSearchConfigurationService
         var chunkSearchIndex = GetChunksSearchIndex(chunksIndexName);
         await this.indexClient.CreateIndexAsync(chunkSearchIndex);
 
-        // Create the Storage data source for the chunked data.
-        var chunksDataSourceConnection = new SearchIndexerDataSourceConnection(GetDataSourceName(chunksIndexName), SearchIndexerDataSourceType.AzureBlob, this.settings.StorageAccountConnectionString, new SearchIndexerDataContainer(chunksContainerName));
-        await this.indexerClient.CreateDataSourceConnectionAsync(chunksDataSourceConnection);
-
-        // Create the chunk indexer based on the JSON files in the knowledge store.
-        var chunksIndexer = new SearchIndexer(GetIndexerName(chunksIndexName), chunksDataSourceConnection.Name, chunkSearchIndex.Name)
+        var usePullModel = UsePullModel(settingsOverride);
+        if (usePullModel)
         {
-            Schedule = new IndexingSchedule(GetIndexingSchedule(settingsOverride)),
-            Parameters = new IndexingParameters()
+            // Create the Storage data source for the chunked data.
+            var chunksDataSourceConnection = new SearchIndexerDataSourceConnection(GetDataSourceName(chunksIndexName), SearchIndexerDataSourceType.AzureBlob, this.settings.StorageAccountConnectionString, new SearchIndexerDataContainer(chunksContainerName));
+            await this.indexerClient.CreateDataSourceConnectionAsync(chunksDataSourceConnection);
+
+            // Create the chunk indexer based on the JSON files in the knowledge store.
+            var chunksIndexer = new SearchIndexer(GetIndexerName(chunksIndexName), chunksDataSourceConnection.Name, chunkSearchIndex.Name)
             {
-                IndexingParametersConfiguration = new IndexingParametersConfiguration()
+                Schedule = new IndexingSchedule(GetIndexingSchedule(settingsOverride)),
+                Parameters = new IndexingParameters()
                 {
-                    ParsingMode = BlobIndexerParsingMode.Json
+                    IndexingParametersConfiguration = new IndexingParametersConfiguration()
+                    {
+                        ParsingMode = BlobIndexerParsingMode.Json
+                    }
                 }
-            }
-        };
-        await this.indexerClient.CreateIndexerAsync(chunksIndexer);
+            };
+            await this.indexerClient.CreateIndexerAsync(chunksIndexer);
+        }
     }
 
     private SearchIndex GetChunksSearchIndex(string chunkIndexName)
@@ -390,5 +408,11 @@ public class AzureCognitiveSearchConfigurationService
     private static string GetSkillsetName(string indexName)
     {
         return $"{indexName}-skillset";
+    }
+
+    private bool UsePullModel(AppSettingsOverride? settingsOverride)
+    {
+        var searchIndexerSkillType = settingsOverride?.SearchIndexerSkillType ?? this.settings.SearchIndexerSkillType;
+        return !string.Equals(searchIndexerSkillType, Constants.SearchIndexerSkillTypes.Push, StringComparison.InvariantCultureIgnoreCase);
     }
 }

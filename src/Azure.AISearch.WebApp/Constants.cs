@@ -10,6 +10,12 @@ public static class Constants
         public const string VectorSearchConfigurationNameDefault = "default";
     }
 
+    public static class SearchIndexerSkillTypes
+    {
+        public const string Pull = "pull";
+        public const string Push = "push";
+    }
+
     public static class Defaults
     {
         public const string SystemRoleInformation = "You are an AI assistant that helps people find information.";

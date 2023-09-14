@@ -20,13 +20,13 @@ public class SkillRequestRecordData
     public string? FieldName { get; set; }
 
     [JsonProperty("num_tokens")]
-    public int? NumTokens { get; set; }
+    public decimal? NumTokens { get; set; }
 
     [JsonProperty("token_overlap")]
-    public int? TokenOverlap { get; set; }
+    public decimal? TokenOverlap { get; set; }
 
     [JsonProperty("min_chunk_size")]
-    public int? MinChunkSize { get; set; }
+    public decimal? MinChunkSize { get; set; }
 
     [JsonProperty("embedding_deployment_name")]
     public string? EmbeddingDeploymentName { get; set; }

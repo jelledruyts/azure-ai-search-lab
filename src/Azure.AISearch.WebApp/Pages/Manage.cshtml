@@ -90,6 +90,21 @@
             <div class="card-header">Options</div>
             <div class="card-body">
                 <div class="mb-2">
+                    <label class="form-label">Search indexer skill type</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="@nameof(AppSettingsOverride.SearchIndexerSkillType)" id="appSettingsOverride-SearchIndexerSkillType-Pull" value="@Constants.SearchIndexerSkillTypes.Pull" checked="@(settings.SearchIndexerSkillType != Constants.SearchIndexerSkillTypes.Push)">
+                            <label class="form-check-label" for="appSettingsOverride-SearchIndexerSkillType-Pull">Pull</label>
+                            <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use the <a href='https://github.com/Azure-Samples/azure-search-power-skills/tree/main/Vector/EmbeddingGenerator' target='_blank'>Azure OpenAI Embeddings Generator power skill</a> to chunk the documents and generate the embeddings, return these as part of the response from the custom skill, store them as JSON blobs in a <a href='https://learn.microsoft.com/azure/search/knowledge-store-concept-intro' target='_blank'>knowledge store</a>, and run a separate indexer to pull these JSON documents from blob storage into the <code>Chunks</code> index."><i class="bi bi-info-circle"></i></span>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="@nameof(AppSettingsOverride.SearchIndexerSkillType)" id="appSettingsOverride-SearchIndexerSkillType-Push" value="@Constants.SearchIndexerSkillTypes.Push" checked="@(settings.SearchIndexerSkillType == Constants.SearchIndexerSkillTypes.Push)">
+                            <label class="form-check-label" for="appSettingsOverride-SearchIndexerSkillType-Push">Push</label>
+                            <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use a custom skill to chunk the documents and generate the embeddings, and directly push these from the custom skill into the <code>Chunks</code> index."><i class="bi bi-info-circle"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
                     <label class="form-label" for="appSettingsOverride-TextEmbedderNumTokens">Number of tokens per chunk</label>
                     <span class="info-tip" data-bs-toggle="popover" data-bs-content="The source data will be split up into smaller chunks of approximately the token size you specify here. Embeddings are generated per chunk so the larger the chunks, the more likely you will hit token limits and the more likely the vector representation will be less specific (as it's generated from a larger body of content). Experiment with this value based on the type of content being chunked and the kinds of recall performance required for retrieval scenarios."><i class="bi bi-info-circle"></i></span>
                     <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextEmbedderNumTokens)" id="appSettingsOverride-TextEmbedderNumTokens" value="@settings.TextEmbedderNumTokens">
@@ -106,7 +121,7 @@
                 </div>
                 <div class="mb-2">
                     <label class="form-label" for="appSettingsOverride-SearchIndexerScheduleMinutes">Search indexer interval in minutes (minimum <code>5</code>)</label>
-                    <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of minutes between indexer executions. If you upload new documents, it can take up to this amount of time for the data to be included in the <code>Documents</code> index. It can again take the same amount of time after that for the data to be included in the <code>Chunks</code> index, as the chunks are created while the indexer for the <code>Documents</code> index runs."><i class="bi bi-info-circle"></i></span>
+                    <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of minutes between indexer executions. If you upload new documents, it can take up to this amount of time for the data to be included in the <code>Documents</code> index. When using the 'pull' skill type, it can again take the same amount of time after that for the data to be included in the <code>Chunks</code> index, as the chunks are created while the indexer for the <code>Documents</code> index runs."><i class="bi bi-info-circle"></i></span>
                     <input type="number" class="form-control" name="@nameof(AppSettingsOverride.SearchIndexerScheduleMinutes)" id="appSettingsOverride-SearchIndexerScheduleMinutes" value="@settings.SearchIndexerScheduleMinutes">
                 </div>
             </div>

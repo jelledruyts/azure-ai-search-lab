@@ -10,18 +10,21 @@ public class SemanticKernelChunkingService
         ArgumentNullException.ThrowIfNull(data.Text);
         ArgumentNullException.ThrowIfNull(data.NumTokens);
         ArgumentNullException.ThrowIfNull(data.TokenOverlap);
+        var numTokens = (int)data.NumTokens.Value;
+        var tokenOverlap = (int)data.TokenOverlap.Value;
+
         if (string.Equals(Path.GetExtension(data.FilePath), ".md", StringComparison.InvariantCultureIgnoreCase))
         {
             // Use specialized chunking for markdown files.
-            var lines = TextChunker.SplitMarkDownLines(data.Text, data.NumTokens.Value);
-            return TextChunker.SplitMarkdownParagraphs(lines, data.NumTokens.Value, data.TokenOverlap.Value);
+            var lines = TextChunker.SplitMarkDownLines(data.Text, numTokens);
+            return TextChunker.SplitMarkdownParagraphs(lines, numTokens, tokenOverlap);
         }
         else
         {
             // Treat everything else as plain text, assuming the search indexer has already
             // done the document cracking from its native file format to text.
-            var lines = TextChunker.SplitPlainTextLines(data.Text, data.NumTokens.Value);
-            return TextChunker.SplitPlainTextParagraphs(lines, data.NumTokens.Value, data.TokenOverlap.Value);
+            var lines = TextChunker.SplitPlainTextLines(data.Text, numTokens);
+            return TextChunker.SplitPlainTextParagraphs(lines, numTokens, tokenOverlap);
         }
     }
 
