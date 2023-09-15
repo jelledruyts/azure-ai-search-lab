@@ -55,11 +55,14 @@
                     <td>@searchIndex.IndexerStatus</td>
                     <td>@searchIndex.IndexerLastRunTime?.ToString("u")</td>
                     <td>
-                        <form method="post">
-                            <input type="hidden" name="action" value="@ManageModel.RunSearchIndexer">
-                            <input type="hidden" name="searchIndexName" value="@searchIndex.Name">
-                            <button type="submit" class="btn btn-sm btn-outline-primary">Run now</button>
-                        </form>
+                        @if (searchIndex.HasIndexer)
+                        {
+                            <form method="post">
+                                <input type="hidden" name="action" value="@ManageModel.RunSearchIndexer">
+                                <input type="hidden" name="searchIndexName" value="@searchIndex.Name">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Run now</button>
+                            </form>
+                        }
                     </td>
                 </tr>
             }

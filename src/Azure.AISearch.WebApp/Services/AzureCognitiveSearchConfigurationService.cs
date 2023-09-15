@@ -78,6 +78,7 @@ public class AzureCognitiveSearchConfigurationService
         try
         {
             var indexerStatus = await this.indexerClient.GetIndexerStatusAsync(GetIndexerName(indexName));
+            searchIndex.HasIndexer = true;
             if (indexerStatus.Value?.LastResult == null)
             {
                 searchIndex.IndexerStatus = "Never run";
@@ -91,7 +92,8 @@ public class AzureCognitiveSearchConfigurationService
         catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
         {
             // The indexer doesn't exist, ignore.
-            searchIndex.IndexerStatus = "Not defined";
+            searchIndex.HasIndexer = false;
+            searchIndex.IndexerStatus = "Not applicable";
         }
         return searchIndex;
     }
