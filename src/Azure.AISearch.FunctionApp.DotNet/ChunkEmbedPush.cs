@@ -84,7 +84,7 @@ public class ChunkEmbedPush
                         // For each chunk with its embedding, create a document to be stored in the search index.
                         var documentChunk = new DocumentChunk
                         {
-                            Id = Guid.NewGuid().ToString(),
+                            Id = $"{record.Data.DocumentId}-{index}",
                             ChunkIndex = index,
                             ChunkOffset = offset,
                             ChunkLength = chunk.Length,
