@@ -22,6 +22,7 @@ public class IndexModel : PageModel
         this.Scenarios = this.searchScenarioProvider.GetSearchScenarios();
         this.SearchRequest = new SearchRequest
         {
+            OpenAIGptDeployment = this.settings.OpenAIGptDeployment,
             SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation(),
             CustomOrchestrationPrompt = this.settings.GetDefaultCustomOrchestrationPrompt()
         };

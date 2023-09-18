@@ -9,21 +9,11 @@ public class AzureOpenAISearchService : ISearchService
 {
     private readonly AppSettings settings;
     private readonly IHttpClientFactory httpClientFactory;
-    private readonly Uri chatCompletionUrl;
-    private readonly Uri extensionChatCompletionUrl;
-    private readonly Uri embeddingsUrl;
 
     public AzureOpenAISearchService(AppSettings settings, IHttpClientFactory httpClientFactory)
     {
-        ArgumentNullException.ThrowIfNull(settings.OpenAIEndpoint);
-        ArgumentNullException.ThrowIfNull(settings.OpenAIGptDeployment);
-        ArgumentNullException.ThrowIfNull(settings.OpenAIEmbeddingDeployment);
         this.settings = settings;
         this.httpClientFactory = httpClientFactory;
-        var baseUrl = new Uri(this.settings.OpenAIEndpoint);
-        this.chatCompletionUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIGptDeployment, "chat/completions");
-        this.extensionChatCompletionUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIGptDeployment, "extensions/chat/completions");
-        this.embeddingsUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIEmbeddingDeployment, "embeddings");
     }
 
     private Uri GetAzureOpenAIUrl(Uri baseUrl, string deploymentName, string path)
@@ -38,7 +28,16 @@ public class AzureOpenAISearchService : ISearchService
 
     public async Task<SearchResponse> SearchAsync(SearchRequest request)
     {
+        ArgumentNullException.ThrowIfNull(settings.OpenAIEndpoint);
+        ArgumentNullException.ThrowIfNull(settings.OpenAIEmbeddingDeployment);
         ArgumentNullException.ThrowIfNull(request.Query);
+        var openAIGptDeployment = string.IsNullOrEmpty(request.OpenAIGptDeployment) ? this.settings.OpenAIGptDeployment : request.OpenAIGptDeployment;
+        ArgumentNullException.ThrowIfNull(openAIGptDeployment);
+
+        var baseUrl = new Uri(this.settings.OpenAIEndpoint);
+        var chatCompletionUrl = GetAzureOpenAIUrl(baseUrl, openAIGptDeployment, "chat/completions");
+        var extensionChatCompletionUrl = GetAzureOpenAIUrl(baseUrl, openAIGptDeployment, "extensions/chat/completions");
+        var embeddingsUrl = GetAzureOpenAIUrl(baseUrl, this.settings.OpenAIEmbeddingDeployment, "embeddings");
 
         var searchResponse = new SearchResponse();
         var messages = new List<ChatRequestMessage>();
@@ -62,17 +61,17 @@ public class AzureOpenAISearchService : ISearchService
 
         if (request.DataSource == DataSourceType.AzureCognitiveSearch)
         {
-            serviceRequest.DataSources = new[] { GetAzureCognitiveSearchDataSource(request) };
+            serviceRequest.DataSources = new[] { GetAzureCognitiveSearchDataSource(request, embeddingsUrl) };
         }
 
         var httpClient = this.httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("api-key", this.settings.OpenAIApiKey);
-        httpClient.DefaultRequestHeaders.Add("chatgpt_url", this.chatCompletionUrl.ToString());
+        httpClient.DefaultRequestHeaders.Add("chatgpt_url", chatCompletionUrl.ToString());
         httpClient.DefaultRequestHeaders.Add("chatgpt_key", this.settings.OpenAIApiKey);
         // NOTE: PostAsJsonAsync doesn't work for some reason and only for OpenAI "On Your Data",
         // where it results in HTTP 500 "Response payload is not completed".
         // var serviceResponseMessage = await httpClient.PostAsJsonAsync(serviceRequestUrl, serviceRequest);
-        var serviceRequestUrl = request.DataSource == DataSourceType.None ? this.chatCompletionUrl : this.extensionChatCompletionUrl;
+        var serviceRequestUrl = request.DataSource == DataSourceType.None ? chatCompletionUrl : extensionChatCompletionUrl;
         var serviceResponseMessage = await httpClient.PostAsync(serviceRequestUrl, new StringContent(JsonSerializer.Serialize(serviceRequest, JsonConfiguration.DefaultJsonOptions), System.Text.Encoding.UTF8, "application/json"));
         if (!serviceResponseMessage.IsSuccessStatusCode)
         {
@@ -125,7 +124,7 @@ public class AzureOpenAISearchService : ISearchService
         return searchResponse;
     }
 
-    private DataSource GetAzureCognitiveSearchDataSource(SearchRequest request)
+    private DataSource GetAzureCognitiveSearchDataSource(SearchRequest request, Uri embeddingsUrl)
     {
         var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
         return new DataSource
@@ -148,7 +147,7 @@ public class AzureOpenAISearchService : ISearchService
                 QueryType = GetQueryType(request),
                 SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
                 RoleInformation = request.SystemRoleInformation,
-                EmbeddingEndpoint = request.IsVectorSearch ? this.embeddingsUrl.ToString() : null,
+                EmbeddingEndpoint = request.IsVectorSearch ? embeddingsUrl.ToString() : null,
                 EmbeddingKey = request.IsVectorSearch ? this.settings.OpenAIApiKey : null
             }
         };

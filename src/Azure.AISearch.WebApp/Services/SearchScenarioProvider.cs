@@ -98,6 +98,7 @@ public class SearchScenarioProvider
                 {
                     Engine = EngineType.AzureOpenAI,
                     DataSource = DataSourceType.None,
+                    OpenAIGptDeployment = this.settings.OpenAIGptDeployment,
                     SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation()
                 }
             },
@@ -110,6 +111,7 @@ public class SearchScenarioProvider
                 {
                     Engine = EngineType.AzureOpenAI,
                     DataSource = DataSourceType.AzureCognitiveSearch,
+                    OpenAIGptDeployment = this.settings.OpenAIGptDeployment,
                     SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation(),
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
                     QueryType = QueryType.HybridSemantic, // As a built-in scenario, always use semantic search for best results
@@ -124,6 +126,7 @@ public class SearchScenarioProvider
                 SearchRequest = new SearchRequest
                 {
                     Engine = EngineType.CustomOrchestration,
+                    OpenAIGptDeployment = this.settings.OpenAIGptDeployment,
                     CustomOrchestrationPrompt = this.settings.GetDefaultCustomOrchestrationPrompt(),
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
                     QueryType = QueryType.HybridSemantic // As a built-in scenario, always use semantic search for best results

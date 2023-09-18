@@ -13,18 +13,11 @@ public class SemanticKernelSearchService : ISearchService
 {
     private readonly AppSettings settings;
     private readonly AzureCognitiveSearchService azureCognitiveSearchService;
-    private readonly IKernel kernel;
 
     public SemanticKernelSearchService(AppSettings settings, AzureCognitiveSearchService azureCognitiveSearchService)
     {
-        ArgumentNullException.ThrowIfNull(settings.OpenAIGptDeployment);
-        ArgumentNullException.ThrowIfNull(settings.OpenAIEndpoint);
-        ArgumentNullException.ThrowIfNull(settings.OpenAIApiKey);
         this.settings = settings;
         this.azureCognitiveSearchService = azureCognitiveSearchService;
-        this.kernel = Kernel.Builder
-            .WithAzureChatCompletionService(this.settings.OpenAIGptDeployment, this.settings.OpenAIEndpoint, this.settings.OpenAIApiKey, true)
-            .Build();
     }
 
     public bool CanHandle(SearchRequest request)
@@ -34,9 +27,17 @@ public class SemanticKernelSearchService : ISearchService
 
     public async Task<SearchResponse> SearchAsync(SearchRequest request)
     {
+        ArgumentNullException.ThrowIfNull(settings.OpenAIEndpoint);
+        ArgumentNullException.ThrowIfNull(settings.OpenAIApiKey);
         ArgumentNullException.ThrowIfNull(request.Query);
+
+        var openAIGptDeployment = string.IsNullOrEmpty(request.OpenAIGptDeployment) ? this.settings.OpenAIGptDeployment : request.OpenAIGptDeployment;
+        ArgumentNullException.ThrowIfNull(openAIGptDeployment);
         var prompt = string.IsNullOrWhiteSpace(request.CustomOrchestrationPrompt) ? this.settings.GetDefaultCustomOrchestrationPrompt() : request.CustomOrchestrationPrompt;
-        var function = this.kernel.CreateSemanticFunction(prompt,
+        var kernel = Kernel.Builder
+            .WithAzureChatCompletionService(openAIGptDeployment, this.settings.OpenAIEndpoint, this.settings.OpenAIApiKey, true)
+            .Build();
+        var function = kernel.CreateSemanticFunction(prompt,
             maxTokens: request.MaxTokens ?? Constants.Defaults.MaxTokens,
             temperature: request.Temperature ?? Constants.Defaults.Temperature,
             topP: request.TopP ?? Constants.Defaults.TopP,
@@ -45,7 +46,7 @@ public class SemanticKernelSearchService : ISearchService
             stopSequences: (request.StopSequences ?? Constants.Defaults.StopSequences).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
         var response = new SearchResponse();
-        var context = this.kernel.CreateNewContext();
+        var context = kernel.CreateNewContext();
         context.Variables["query"] = request.Query;
 
         // Query the search index for relevant data first, by passing through the original request
@@ -73,8 +74,12 @@ public class SemanticKernelSearchService : ISearchService
         context.Variables["sources"] = sourcesBuilder.ToString();
 
         // Run the semantic function to generate the answer.
-        var answer = await this.kernel.RunAsync(context.Variables, function);
-        response.Answers.Add(new SearchAnswer { Text = answer.Result });
+        var answer = await kernel.RunAsync(context.Variables, function);
+        response.Error = answer.LastException?.Message;
+        if (!string.IsNullOrWhiteSpace(answer.Result))
+        {
+            response.Answers.Add(new SearchAnswer { Text = answer.Result });
+        }
         return response;
     }
 

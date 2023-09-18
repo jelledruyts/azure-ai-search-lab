@@ -68,6 +68,12 @@
                 </div>
             </div>
 
+            <div class="mb-2" v-show="searchRequest.engine == '@EngineType.AzureOpenAI' || searchRequest.engine == '@EngineType.CustomOrchestration'">
+                <label class="form-label" for="searchRequest-SystemRoleInformation">GPT model deployment</label>
+                <span class="info-tip" data-bs-toggle="popover" data-bs-content="If you deployed other models (or versions) to Azure OpenAI than the default one, specify the deployment name here to use that instead."><i class="bi bi-info-circle"></i></span>
+                <input type="text" class="form-control" name="@nameof(SearchRequest.OpenAIGptDeployment)" id="searchRequest-OpenAIGptDeployment" v-model="searchRequest.openAIGptDeployment">
+            </div>
+
             <div class="mb-2" v-show="searchRequest.engine == '@EngineType.AzureOpenAI'">
                 <label class="form-label" for="searchRequest-SystemRoleInformation">System role information</label>
                 <span class="info-tip" data-bs-toggle="popover" data-bs-content="Give the model instructions about how it should behave and any context it should reference when generating a response. You can describe the assistant's personality, tell it what it should and shouldn't answer, and tell it how to format responses."><i class="bi bi-info-circle"></i></span>
