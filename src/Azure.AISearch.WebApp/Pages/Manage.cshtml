@@ -14,18 +14,34 @@
 
 <h2 class="display-6 mb-3">@ViewData["Title"]</h2>
 
+@if (!string.IsNullOrWhiteSpace(Model.Message))
+{
+    <div class="alert alert-info">@Model.Message</div>
+}
+
 @if (!settings.DisableUploadDocuments)
 {
     <h3 class="mb-3">Upload documents</h3>
 
     <form method="post" enctype="multipart/form-data">
-        <div class="alert alert-info">
+        <p>
             This allows you to upload new documents to the <code>Documents</code> container in the configured Azure Storage account.
             The documents will automatically be added to the <code>Documents</code> search index by the indexer infrastructure.
             The indexer and associated skillset will also split the document content into smaller chunks, generate embeddings for
             these chunks, and then store the chunk contents along with their embedding vector representations in the <code>Chunks</code>
             search index.
-        </div>
+        </p>
+        @if (Model.SearchServiceStatus != null)
+        {
+            <p>
+                Note that the <code>@Model.SearchServiceStatus.Sku</code> tier of Azure Cognitive Search being used here has a limit of
+                <b>maximum <code>@Model.SearchServiceStatus.BlobIndexerMaxCharactersExtractedPerFile</code> characters of text that are extracted per document</b>.
+                If you upload documents that have more characters, the remaining text will be truncated and not included in the search index.
+                The current tier also has a file size limit of <b>maximum <code>@Model.SearchServiceStatus.BlobIndexerMaxFileSizeMB</code> MB per document</b>.
+                If you upload documents that exceed this limit, they will not be processed by the indexer at all.
+                For more information, see <a href="https://learn.microsoft.com/azure/search/search-limits-quotas-capacity#indexer-limits">Service limits</a>.
+            </p>
+        }
         <input type="file" class="form-control" name="documents" multiple>
         <input type="hidden" name="action" value="@ManageModel.UploadDocument">
         <button type="submit" class="btn btn-primary my-3">Upload</button>
@@ -34,7 +50,7 @@
 
 @if (Model.SearchIndexStatuses != null && Model.SearchIndexStatuses.Any())
 {
-    <h3 class="mb-3">Search index status</h3>
+    <h3 class="mt-4 mb-3">Search index status</h3>
 
     <table class="table table-striped table-hover">
         <thead>
@@ -72,7 +88,7 @@
 
 @if (!settings.DisableResetSearchConfiguration)
 {
-    <h3 class="mb-3">Reset search configuration</h3>
+    <h3 class="mt-5 mb-3">Reset search configuration</h3>
 
     <form method="post">
         <div class="alert alert-warning">

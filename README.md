@@ -67,8 +67,8 @@ This means the following Azure region and model combinations are currently suppo
 | Azure Region      | `gpt-4` (version `0613`) | `gpt-4-32k` (version `0613`) | `gpt-35-turbo` (version `0301`) | `gpt-35-turbo-16k` (version `0613`) | `text-embedding-ada-002` (version `2`)
 | ----------------- | -- | -- | -- | -- | -- |
 | East US           | ✅ | ✅ | ✅ | ✅ | ✅ |
-| France Central    | ✅ | ✅ | ✅ | ✅ | ✅ |
 | UK South          | ✅ | ✅ | ✅ | ✅ | ✅ |
+| France Central    | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Japan East        | ✅ | ✅ | ❌ | ✅ | ✅ |
 | North Central US  | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Switzerland North | ❌ | ❌ | ❌ | ✅ | ✅ |

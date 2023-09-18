@@ -441,6 +441,10 @@
                             "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2022-09-01').primaryKey]"
                         },
                         {
+                            "name": "SearchServiceSku",
+                            "value": "[parameters('searchServiceSku')]"
+                        },
+                        {
                             "name": "SearchIndexNameBlobDocuments",
                             "value": "[variables('searchIndexNameBlobDocuments')]"
                         },
@@ -549,6 +553,11 @@
         "searchServiceAdminKey": {
             "type": "string",
             "value": "[listAdminKeys(resourceId('Microsoft.Search/searchServices', variables('searchServiceName')), '2022-09-01').primaryKey]"
+        },
+        "searchServiceSku":
+        {
+            "type": "string",
+            "value": "[parameters('searchServiceSku')]"
         },
         "searchIndexNameBlobDocuments": {
             "type": "string",

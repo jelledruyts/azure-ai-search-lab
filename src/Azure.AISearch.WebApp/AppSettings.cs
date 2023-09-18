@@ -19,6 +19,7 @@ public class AppSettings
     public int? TextEmbedderMinChunkSize { get; set; } // If unspecified, will use the default as configured in the text embedder Function App.
     public string? SearchServiceUrl { get; set; }
     public string? SearchServiceAdminKey { get; set; }
+    public string? SearchServiceSku { get; set; }
     public string? SearchIndexNameBlobDocuments { get; set; }
     public string? SearchIndexNameBlobChunks { get; set; }
     public string? SearchIndexerSkillType { get; set; } // If unspecified, will use the "pull" model.
