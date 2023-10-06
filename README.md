@@ -18,7 +18,11 @@ The main differentiators for this project however are that it's extremely [easy 
 
 ![Search options](media/search-options.png)
 
-**See search results, including *semantic answers* when available:**
+**See a sequence diagram of what will happen, depending on the options you've chosen:**
+
+![Sequence diagram](media/sequence-diagram.png)
+
+**Get search results, including *semantic answers* when available:**
 
 ![Search results](media/search-results.png)
 
