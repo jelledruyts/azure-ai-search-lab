@@ -4,28 +4,168 @@
     ViewData["Title"] = "Search";
 }
 @section Scripts {
-    <script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false });
+
         const { createApp, ref, watch } = Vue
         createApp({
             setup() {
-                const scenarios = ref(@Html.Raw(JsonSerializer.Serialize(Model.Scenarios, JsonConfiguration.DefaultJsonOptions)))
-                const selectedScenario = ref(null)
-                const searchRequest = ref(@Html.Raw(JsonSerializer.Serialize(Model.SearchRequest, JsonConfiguration.DefaultJsonOptions)))
+                const scenarios = ref(@Html.Raw(JsonSerializer.Serialize(Model.Scenarios, JsonConfiguration.DefaultJsonOptions)));
+                const selectedScenario = ref(null);
+                const searchRequest = ref(@Html.Raw(JsonSerializer.Serialize(Model.SearchRequest, JsonConfiguration.DefaultJsonOptions)));
 
+                const drawMermaid = function (mermaidDiagram) {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                    const mermaidTheme = currentTheme == 'dark' ? 'dark' : 'default';
+                    const graphDefinition = "%%{init: {'theme':'" + mermaidTheme + "'}}%%" + mermaidDiagram;
+                    mermaid.render('mermaidSvg', graphDefinition).then(({ svg, bindFunctions }) => {
+                        const mermaidElement = document.getElementById('mermaid');
+                        mermaidElement.innerHTML = svg;
+                    });
+                };
+
+                const getAzureCognitiveSearchSequenceDiagram = function (sourceParticipant, queryType, searchIndex) {
+                    var mermaidDiagram = '';
+                    mermaidDiagram += 'create participant ACS as Azure Cognitive Search\n';
+                    if (queryType == '@QueryType.TextStandard' || queryType == '@QueryType.TextSemantic') {
+                        // Pure text search.
+                        mermaidDiagram += `${sourceParticipant}->>ACS: Search using text\n`;
+                        mermaidDiagram += `create participant Index as ${searchIndex} Index\n`;
+                        mermaidDiagram += `ACS->>Index: Search using text\n`;
+                        mermaidDiagram += 'destroy Index\n';
+                        mermaidDiagram += 'Index-xACS: Text search results\n';
+                    }
+                    else if (queryType == '@QueryType.Vector') {
+                        // Pure vector search.
+                        mermaidDiagram += `${sourceParticipant}->>ACS: Search using vector\n`;
+                        mermaidDiagram += `create participant Index as ${searchIndex} Index\n`;
+                        mermaidDiagram += `ACS->>Index: Search using vector\n`;
+                        mermaidDiagram += 'destroy Index\n';
+                        mermaidDiagram += 'Index-xACS: Vector search results\n';
+                    }
+                    else if (queryType == '@QueryType.HybridStandard' || queryType == '@QueryType.HybridSemantic') {
+                        // Hybrid search.
+                        mermaidDiagram += `${sourceParticipant}->>ACS: Search using vector and text\n`;
+                        mermaidDiagram += `create participant Index as ${searchIndex} Index\n`;
+                        mermaidDiagram += `ACS->>Index: Search using vector\n`;
+                        mermaidDiagram += 'Index->>ACS: Vector search results\n';
+                        mermaidDiagram += `ACS->>Index: Search using text\n`;
+                        mermaidDiagram += 'destroy Index\n';
+                        mermaidDiagram += 'Index-xACS: Text search results\n';
+                        mermaidDiagram += `ACS->>ACS: Merge (rerank) vector and text search results\n`;
+                    }
+
+                    if (queryType == '@QueryType.TextSemantic' || queryType == '@QueryType.HybridSemantic') {
+                        // Semantic search.
+                        mermaidDiagram += 'ACS->>ACS: L2 semantic reranking of search results\n';
+                    }
+                    mermaidDiagram += 'destroy ACS\n';
+                    mermaidDiagram += `ACS-x${sourceParticipant}: Search results\n`;
+                    return mermaidDiagram;
+                }
+
+                const getAzureOpenAIVectorSequenceDiagram = function () {
+                    var mermaidDiagram = '';
+                    mermaidDiagram += 'create participant Embedding as Embedding Model\n';
+                    mermaidDiagram += 'AOAI->>Embedding: Generate vector for search query\n';
+                    mermaidDiagram += 'destroy Embedding\n';
+                    mermaidDiagram += 'Embedding-xAOAI: Vector for search query\n';
+                    return mermaidDiagram;
+                }
+
+                const showSequenceDiagram = function () {
+                    var engine = searchRequest.value.engine;
+                    var searchIndex = searchRequest.value.searchIndex;
+                    var dataSource = searchRequest.value.dataSource;
+                    var queryType = searchRequest.value.queryType;
+                    var needsVector = (queryType == '@QueryType.Vector' || queryType == '@QueryType.HybridStandard' || queryType == '@QueryType.HybridSemantic');
+
+                    var mermaidDiagram = 'sequenceDiagram\n';
+                    mermaidDiagram += 'actor User as User\n';
+                    mermaidDiagram += 'participant App as Search App\n';
+                    if (engine == '@EngineType.AzureCognitiveSearch') {
+                        // Azure Cognitive Search.
+                        mermaidDiagram += 'User->>App: Search query\n';
+                        if (needsVector) {
+                            mermaidDiagram += 'create participant AOAI as Azure OpenAI\n';
+                            mermaidDiagram += 'App->>AOAI: Generate vector for search query\n';
+                            mermaidDiagram += getAzureOpenAIVectorSequenceDiagram();
+                            mermaidDiagram += 'destroy AOAI\n';
+                            mermaidDiagram += 'AOAI-xApp: Vector for search query\n';
+                        }
+                        mermaidDiagram += getAzureCognitiveSearchSequenceDiagram('App', queryType, searchIndex);
+                        mermaidDiagram += 'App->>User: Search results\n';
+                    } else if (engine == '@EngineType.AzureOpenAI') {
+                        // Azure OpenAI.
+                        mermaidDiagram += 'User->>App: Search query and history\n';
+                        mermaidDiagram += 'create participant AOAI as Azure OpenAI\n';
+                        mermaidDiagram += 'App->>AOAI: Generate chat response\n';
+                        if (dataSource == '@DataSourceType.AzureCognitiveSearch') {
+                            // Using data source Azure Cognitive Search.
+                            if (needsVector) {
+                                mermaidDiagram += getAzureOpenAIVectorSequenceDiagram();
+                            }
+                            mermaidDiagram += getAzureCognitiveSearchSequenceDiagram('AOAI', queryType, searchIndex);
+                            mermaidDiagram += 'AOAI->>AOAI: Build a prompt using the search results to ground the model\n';
+                        }
+                        // Chat completion.
+                        mermaidDiagram += 'create participant GPT as GPT Model\n';
+                        var gptInput = dataSource == '@DataSourceType.None' ? 'Generate chat response using search query and history' : 'Generate chat response using specialized prompt';
+                        mermaidDiagram += `AOAI->>GPT: ${gptInput}\n`;
+                        mermaidDiagram += 'destroy GPT\n';
+                        mermaidDiagram += 'GPT-xAOAI: Chat response\n';
+                        mermaidDiagram += 'destroy AOAI\n';
+                        mermaidDiagram += 'AOAI-xApp: Chat response\n';
+                        mermaidDiagram += 'App->>User: Chat response\n';
+                    } else if (engine == '@EngineType.CustomOrchestration') {
+                        // Custom orchestration.
+                        mermaidDiagram += 'User->>App: Search query\n';
+                        mermaidDiagram += 'create participant AOAI as Azure OpenAI\n';
+                        if (needsVector) {
+                            mermaidDiagram += 'App->>AOAI: Generate vector for search query\n';
+                            mermaidDiagram += getAzureOpenAIVectorSequenceDiagram();
+                            mermaidDiagram += 'AOAI->>App: Vector for search query\n';
+                        }
+                        mermaidDiagram += getAzureCognitiveSearchSequenceDiagram('App', queryType, searchIndex);
+                        mermaidDiagram += 'App->>App: Build a prompt using the search results to ground the model\n';
+                        mermaidDiagram += `App->>AOAI: Generate chat response\n`;
+                        mermaidDiagram += 'create participant GPT as GPT Model\n';
+                        mermaidDiagram += `AOAI->>GPT: Generate chat response using specialized prompt\n`;
+                        mermaidDiagram += 'destroy GPT\n';
+                        mermaidDiagram += 'GPT-xAOAI: Chat response\n';
+                        mermaidDiagram += 'destroy AOAI\n';
+                        mermaidDiagram += 'AOAI-xApp: Chat response\n';
+                        mermaidDiagram += 'App->>User: Chat response\n';
+                    }
+
+                    drawMermaid(mermaidDiagram);
+                };
+
+                // Update the search request when a scenario is selected.
                 watch(selectedScenario, (newScenario) => {
                     if (newScenario) {
                         searchRequest.value = newScenario.searchRequest;
                     }
-                })
+                });
+
+                // Update the sequence diagram whenever relevant search request properties change.
+                watch(
+                    () => [searchRequest.value.engine, searchRequest.value.searchIndex, searchRequest.value.queryType, searchRequest.value.dataSource],
+                    () => showSequenceDiagram()
+                );
+
+                showSequenceDiagram();
 
                 return {
                     scenarios, selectedScenario, searchRequest
-                }
+                };
             }
-        }).mount('#app')
+        }).mount('#app');
+
         // Enable popovers after the Vue app is mounted as the trigger elements are dynamically added to the DOM. 
-        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
-        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, { html: true }))
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, { html: true }));
     </script>
 }
 <h2 class="display-6 mb-3">@ViewData["Title"]</h2>
@@ -230,6 +370,13 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">What's going on?</div>
+        <div class="card-body">
+            <pre id="mermaid" class="mermaid"></pre>
         </div>
     </div>
 
