@@ -8,9 +8,10 @@ By default, a few documents are added automatically to allow you to use the appl
 
 There are a number of related and somewhat similar projects, most notably the following:
 
-- [ChatGPT + Enterprise data with Azure OpenAI and Cognitive Search](https://github.com/Azure-Samples/azure-search-openai-demo)
+- ["Chat with your data" Solution Accelerator](https://aka.ms/ChatWithYourDataSolutionAccelerator)
+- [ChatGPT + Enterprise data with Azure OpenAI and Cognitive Search](https://github.com/Azure-Samples/azure-search-openai-demo) (demo)
 - [Azure Chat Solution Accelerator powered by Azure Open AI Service](https://github.com/microsoft/azurechat)
-- [Sample Chat App with Azure OpenAI](https://github.com/Microsoft/sample-app-aoai-chatGPT)
+- [Sample Chat App with Azure OpenAI](https://github.com/Microsoft/sample-app-aoai-chatGPT) (sample)
 
 The main differentiators for this project however are that it's extremely [easy to set up](#deployment) and that it's aimed to be a *teaching and experimentation app*, rather than a sample focusing on just one service or scenario, or showing how you can build a realistic production-ready service yourself.
 
