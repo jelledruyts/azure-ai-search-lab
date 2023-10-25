@@ -63,11 +63,11 @@ public class AzureCognitiveSearchService : ISearchService
             var queryEmbeddings = await this.embeddingService.GetEmbeddingAsync(request.Query);
 
             // Pass the vector as part of the search options.
-            searchOptions.Vectors.Add(new SearchQueryVector
+            searchOptions.VectorQueries.Add(new RawVectorQuery
             {
                 KNearestNeighborsCount = request.VectorNearestNeighborsCount ?? Constants.Defaults.VectorNearestNeighborsCount,
                 Fields = { nameof(DocumentChunk.ContentVector) },
-                Value = queryEmbeddings
+                Vector = queryEmbeddings
             });
         }
 

@@ -1,6 +1,7 @@
 using System.Text;
 using Azure.AISearch.WebApp.Models;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
 
 namespace Azure.AISearch.WebApp.Services;
 
@@ -37,13 +38,16 @@ public class SemanticKernelSearchService : ISearchService
         var kernel = Kernel.Builder
             .WithAzureChatCompletionService(openAIGptDeployment, this.settings.OpenAIEndpoint, this.settings.OpenAIApiKey, true)
             .Build();
-        var function = kernel.CreateSemanticFunction(prompt,
-            maxTokens: request.MaxTokens ?? Constants.Defaults.MaxTokens,
-            temperature: request.Temperature ?? Constants.Defaults.Temperature,
-            topP: request.TopP ?? Constants.Defaults.TopP,
-            frequencyPenalty: request.FrequencyPenalty ?? Constants.Defaults.FrequencyPenalty,
-            presencePenalty: request.PresencePenalty ?? Constants.Defaults.PresencePenalty,
-            stopSequences: (request.StopSequences ?? Constants.Defaults.StopSequences).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        var requestSettings = new OpenAIRequestSettings
+        {
+            MaxTokens = request.MaxTokens ?? Constants.Defaults.MaxTokens,
+            Temperature = request.Temperature ?? Constants.Defaults.Temperature,
+            TopP = request.TopP ?? Constants.Defaults.TopP,
+            FrequencyPenalty = request.FrequencyPenalty ?? Constants.Defaults.FrequencyPenalty,
+            PresencePenalty = request.PresencePenalty ?? Constants.Defaults.PresencePenalty,
+            StopSequences = (request.StopSequences ?? Constants.Defaults.StopSequences).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        };
+        var function = kernel.CreateSemanticFunction(prompt, requestSettings);
 
         var response = new SearchResponse();
         var context = kernel.CreateNewContext();
@@ -74,11 +78,18 @@ public class SemanticKernelSearchService : ISearchService
         context.Variables["sources"] = sourcesBuilder.ToString();
 
         // Run the semantic function to generate the answer.
-        var answer = await kernel.RunAsync(context.Variables, function);
-        response.Error = answer.LastException?.Message;
-        if (!string.IsNullOrWhiteSpace(answer.Result))
+        try
         {
-            response.Answers.Add(new SearchAnswer { Text = answer.Result });
+            var kernelResult = await kernel.RunAsync(context.Variables, function);
+            var answer = kernelResult.GetValue<string>();
+            if (!string.IsNullOrWhiteSpace(answer))
+            {
+                response.Answers.Add(new SearchAnswer { Text = answer });
+            }
+        }
+        catch (Exception exc)
+        {
+            response.Error = exc.Message;
         }
         return response;
     }
