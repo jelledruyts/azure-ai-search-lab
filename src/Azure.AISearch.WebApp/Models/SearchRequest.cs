@@ -7,6 +7,7 @@ public class SearchRequest
     public EngineType Engine { get; set; } = EngineType.AzureCognitiveSearch;
     public SearchIndexType SearchIndex { get; set; } = SearchIndexType.Documents;
     public QueryType QueryType { get; set; } = QueryType.TextStandard;
+    public QuerySyntax QuerySyntax { get; set; } = QuerySyntax.Simple;
     public DataSourceType DataSource { get; set; } = DataSourceType.None;
     public string? OpenAIGptDeployment { get; set; }
     public int? VectorNearestNeighborsCount { get; set; } = Constants.Defaults.VectorNearestNeighborsCount;

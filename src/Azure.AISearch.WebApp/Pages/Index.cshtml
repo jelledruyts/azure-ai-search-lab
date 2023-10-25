@@ -310,6 +310,22 @@
                 </div>
             </div>
 
+            <div class="mb-2" v-show="!(searchRequest.engine == '@EngineType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.None') && (searchRequest.queryType == '@QueryType.TextStandard' || searchRequest.queryType == '@QueryType.HybridStandard')">
+                <label class="form-label">Query syntax</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QuerySyntax)" id="searchRequest-QuerySyntax-Simple" value="@QuerySyntax.Simple" v-model="searchRequest.querySyntax">
+                        <label class="form-check-label" for="searchRequest-QuerySyntax-Simple">Simple</label>
+                        <span class="info-tip" data-bs-toggle="popover" data-bs-content="Uses the <a href='https://learn.microsoft.com/azure/search/query-simple-syntax' target='_blank'>simple query syntax</a> for searches. Search text is interpreted using a simple query language that allows for symbols such as <code>+</code>, <code>*</code> and <code>&quot;&quot;</code>."><i class="bi bi-info-circle"></i></span>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QuerySyntax)" id="searchRequest-QuerySyntax-Lucene" value="@QuerySyntax.Lucene" v-model="searchRequest.querySyntax">
+                        <label class="form-check-label" for="searchRequest-QuerySyntax-Lucene">Lucene</label>
+                        <span class="info-tip" data-bs-toggle="popover" data-bs-content="Uses the <a href='https://learn.microsoft.com/azure/search/query-lucene-syntax' target='_blank'>full Lucene query syntax</a> for searches. Search text is interpreted using the Lucene query language which allows field-specific and weighted searches, as well as other advanced features."><i class="bi bi-info-circle"></i></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="mb-2" v-show="!(searchRequest.engine == '@EngineType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.None') && (searchRequest.queryType == '@QueryType.Vector' || searchRequest.queryType == '@QueryType.HybridStandard' || searchRequest.queryType == '@QueryType.HybridSemantic')">
                 <label class="form-label">Vector parameters</label>
                 <div class="row row-cols-lg-auto g-3 align-items-center">

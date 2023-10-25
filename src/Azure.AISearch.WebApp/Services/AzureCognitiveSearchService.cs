@@ -32,7 +32,7 @@ public class AzureCognitiveSearchService : ISearchService
         var indexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks;
         var searchOptions = new SearchOptions
         {
-            QueryType = request.IsSemanticSearch ? SearchQueryType.Semantic : SearchQueryType.Simple,
+            QueryType = request.IsSemanticSearch ? SearchQueryType.Semantic : (request.QuerySyntax == QuerySyntax.Lucene ? SearchQueryType.Full : SearchQueryType.Simple),
             HighlightPreTag = "<mark>",
             HighlightPostTag = "</mark>"
         };
