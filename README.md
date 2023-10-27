@@ -73,7 +73,7 @@ This means the following Azure region and model combinations are currently suppo
 | ----------------- | -- | -- | -- | -- | -- |
 | East US           | ✅ | ✅ | ✅ | ✅ | ✅ |
 | UK South          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| France Central    | ✅ | ✅ | ❌ | ✅ | ✅ |
+| France Central    | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Japan East        | ✅ | ✅ | ❌ | ✅ | ✅ |
 | North Central US  | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Switzerland North | ❌ | ❌ | ❌ | ✅ | ✅ |
