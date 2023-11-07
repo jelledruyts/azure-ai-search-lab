@@ -2,14 +2,14 @@
 
 ## About
 
-This project provides a very easy to use learning and experimentation playground to try out various AI-enabled search scenarios in Azure. It provides a web application front-end which uses [Azure Cognitive Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search) and [Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/overview) to execute searches with a variety of options - ranging from simple text search, to semantic search, vector and hybrid search, and using generative AI to answer search queries in various ways. This allows you to quickly understand what each option does, how it affects the search results, and how various approaches compare against each other.
+This project provides a very easy to use learning and experimentation playground to try out various AI-enabled search scenarios in Azure. It provides a web application front-end which uses [Azure Cognitive Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search) and [Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/overview) to execute searches with a variety of options - ranging from simple keyword search, to semantic search, vector and hybrid search, and using generative AI to answer search queries in various ways. This allows you to quickly understand what each option does, how it affects the search results, and how various approaches compare against each other.
 
 By default, a few documents are added automatically to allow you to use the application directly. You're encouraged to upload your own documents (which you can also easily do via the web app) so you can experiment with searching over your own content.
 
 There are a number of related and somewhat similar projects, most notably the following:
 
 - ["Chat with your data" Solution Accelerator](https://aka.ms/ChatWithYourDataSolutionAccelerator)
-- [ChatGPT + Enterprise data with Azure OpenAI and Cognitive Search](https://github.com/Azure-Samples/azure-search-openai-demo) (demo)
+- [ChatGPT + Enterprise data with Azure OpenAI and Cognitive Search](https://aka.ms/EntGPTSearch) (demo)
 - [Azure Chat Solution Accelerator powered by Azure Open AI Service](https://github.com/microsoft/azurechat)
 - [Sample Chat App with Azure OpenAI](https://github.com/Microsoft/sample-app-aoai-chatGPT) (sample)
 
@@ -73,7 +73,7 @@ This means the following Azure region and model combinations are currently suppo
 | ----------------- | -- | -- | -- | -- | -- |
 | East US           | ✅ | ✅ | ✅ | ✅ | ✅ |
 | UK South          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| France Central    | ✅ | ✅ | ❌ | ✅ | ✅ |
+| France Central    | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Japan East        | ✅ | ✅ | ❌ | ✅ | ✅ |
 | North Central US  | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Switzerland North | ❌ | ❌ | ❌ | ✅ | ✅ |
