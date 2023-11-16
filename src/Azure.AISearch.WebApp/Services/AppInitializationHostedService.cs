@@ -16,7 +16,7 @@ public class AppInitializationHostedService : IHostedService
         // Initialize the Azure Storage service.
         await this.azureStorageConfigurationService.InitializeAsync();
 
-        // Initialize the Azure Cognitive Search indexes, datasources, skillsets and indexers.
+        // Initialize the Azure AI Search indexes, datasources, skillsets and indexers.
         await this.azureSearchConfigurationService.InitializeAsync();
     }
 

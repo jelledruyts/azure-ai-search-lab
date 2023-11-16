@@ -34,7 +34,7 @@
         @if (Model.SearchServiceStatus != null)
         {
             <p>
-                Note that the <code>@Model.SearchServiceStatus.Sku</code> tier of Azure Cognitive Search being used here has a limit of
+                Note that the <code>@Model.SearchServiceStatus.Sku</code> tier of Azure AI Search being used here has a limit of
                 <b>maximum <code>@Model.SearchServiceStatus.BlobIndexerMaxCharactersExtractedPerFile</code> characters of text that are extracted per document</b>.
                 If you upload documents that have more characters, the remaining text will be truncated and not included in the search index.
                 The current tier also has a file size limit of <b>maximum <code>@Model.SearchServiceStatus.BlobIndexerMaxFileSizeMB</code> MB per document</b>.
@@ -93,7 +93,7 @@
     <form method="post">
         <div class="alert alert-warning">
             <p>
-                This will delete all indexes in Azure Cognitive Search along with their supporting infrastructure
+                This will delete all indexes in Azure AI Search along with their supporting infrastructure
                 like indexers, data sources and skillset definitions.
             </p>
             <p>

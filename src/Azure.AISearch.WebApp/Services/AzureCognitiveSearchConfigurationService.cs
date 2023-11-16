@@ -393,7 +393,7 @@ public class AzureCognitiveSearchConfigurationService
     private TimeSpan GetIndexingSchedule(AppSettingsOverride? settingsOverride)
     {
         var minutes = settingsOverride?.SearchIndexerScheduleMinutes ?? this.settings.SearchIndexerScheduleMinutes ?? 5;
-        minutes = Math.Max(5, minutes); // Ensure the minimum is 5 minutes, as required by Azure Cognitive Search.
+        minutes = Math.Max(5, minutes); // Ensure the minimum is 5 minutes, as required by Azure AI Search.
         return TimeSpan.FromMinutes(minutes);
     }
 

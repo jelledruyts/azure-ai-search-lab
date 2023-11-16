@@ -28,7 +28,7 @@ public class AzureCognitiveSearchService
             {
                 var options = new SearchOptions
                 {
-                    Size = 1000, // Max allowed by Azure Cognitive Search.
+                    Size = 1000, // Max allowed by Azure AISearch.
                     Select = { nameof(DocumentChunk.Id) }, // Only return the key field to minimize data transfer.
                     IncludeTotalCount = true,
                     Filter = $"{nameof(DocumentChunk.SourceDocumentId)} eq '{sourceDocumentId}'"

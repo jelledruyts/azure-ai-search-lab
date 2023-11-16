@@ -54,7 +54,7 @@ public class SemanticKernelSearchService : ISearchService
         context.Variables["query"] = request.Query;
 
         // Query the search index for relevant data first, by passing through the original request
-        // to the Azure Cognitive Search service.
+        // to the Azure AI Search service.
         var azureCognitiveSearchResponse = await this.azureCognitiveSearchService.SearchAsync(request);
 
         // Copy the document results over, as these are used to generate the answer.
