@@ -33,7 +33,7 @@ public class SearchScenarioProvider
             {
                 Id = "az-cognitivesearch-documents-keyword-semantic",
                 DisplayName = "Azure AI Search - Documents - Keyword - Semantic",
-                Description = "This scenario uses Azure AI Search to perform keyword search across the original documents. It uses semantic search which returns more relevant results by applying language understanding to an initial search result.",
+                Description = "This scenario uses Azure AI Search to perform keyword search across the original documents. It uses semantic ranking which returns more relevant results by applying language understanding to an initial search result.",
                 SearchRequest = new SearchRequest
                 {
                     Engine = EngineType.AzureCognitiveSearch,
@@ -57,7 +57,7 @@ public class SearchScenarioProvider
             {
                 Id = "az-cognitivesearch-chunks-keyword-semantic",
                 DisplayName = "Azure AI Search - Chunks - Keyword - Semantic",
-                Description = "This scenario uses Azure AI Search to perform keyword search across the smaller chunks of the original documents. It uses semantic search which returns more relevant results by applying language understanding to an initial search result.",
+                Description = "This scenario uses Azure AI Search to perform keyword search across the smaller chunks of the original documents. It uses semantic ranking which returns more relevant results by applying language understanding to an initial search result.",
                 SearchRequest = new SearchRequest
                 {
                     Engine = EngineType.AzureCognitiveSearch,
@@ -81,7 +81,7 @@ public class SearchScenarioProvider
             {
                 Id = "az-cognitivesearch-chunks-hybrid-semantic",
                 DisplayName = "Azure AI Search - Chunks - Hybrid - Semantic",
-                Description = "This scenario uses Azure AI Search to perform a hybrid (keyword + vector) search across the smaller chunks of the original documents, where each chunk is represented as a vector of numbers as determined by an Azure OpenAI embeddings model. The search query itself is first vectorized using the same embeddings model, and the best matching results for the search query are determined based on merging the results of the keyword and vector searches. The keyword search uses semantic search for even more accuracy with L2 reranking using the same language models that power Bing.",
+                Description = "This scenario uses Azure AI Search to perform a hybrid (keyword + vector) search across the smaller chunks of the original documents, where each chunk is represented as a vector of numbers as determined by an Azure OpenAI embeddings model. The search query itself is first vectorized using the same embeddings model, and the best matching results for the search query are determined based on merging the results of the keyword and vector searches. The keyword search uses semantic ranking for even more accuracy with L2 reranking using the same language models that power Bing.",
                 SearchRequest = new SearchRequest
                 {
                     Engine = EngineType.AzureCognitiveSearch,
@@ -114,7 +114,7 @@ public class SearchScenarioProvider
                     OpenAIGptDeployment = this.settings.OpenAIGptDeployment,
                     SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation(),
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
-                    QueryType = QueryType.HybridSemantic, // As a built-in scenario, always use semantic search for best results
+                    QueryType = QueryType.HybridSemantic, // As a built-in scenario, always use semantic ranking for best results
                     LimitToDataSource = true
                 }
             },
@@ -129,7 +129,7 @@ public class SearchScenarioProvider
                     OpenAIGptDeployment = this.settings.OpenAIGptDeployment,
                     CustomOrchestrationPrompt = this.settings.GetDefaultCustomOrchestrationPrompt(),
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
-                    QueryType = QueryType.HybridSemantic // As a built-in scenario, always use semantic search for best results
+                    QueryType = QueryType.HybridSemantic // As a built-in scenario, always use semantic ranking for best results
                 }
             }
         };
