@@ -35,7 +35,7 @@ public class AzureOpenAISearchService : ISearchService
         ArgumentNullException.ThrowIfNull(request.Query);
 
         var searchResponse = new SearchResponse();
-        var chatCompletionsOptions = new ChatCompletionsOptions();
+        var chatCompletionsOptions = new ChatCompletionsOptions { DeploymentName = this.settings.OpenAIGptDeployment };
         chatCompletionsOptions.Messages.Add(new ChatMessage(ChatRole.System, request.SystemRoleInformation));
 
         if (request.History != null && request.History.Any())
@@ -59,7 +59,7 @@ public class AzureOpenAISearchService : ISearchService
             };
         }
 
-        var serviceResponse = await this.client.GetChatCompletionsAsync(this.settings.OpenAIGptDeployment, chatCompletionsOptions);
+        var serviceResponse = await this.client.GetChatCompletionsAsync(chatCompletionsOptions);
 
         if (serviceResponse == null || !serviceResponse.Value.Choices.Any())
         {
@@ -110,10 +110,9 @@ public class AzureOpenAISearchService : ISearchService
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIApiKey);
         var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
-        return new AzureCognitiveSearchChatExtensionConfiguration
+        var configuration = new AzureCognitiveSearchChatExtensionConfiguration
         {
             SearchEndpoint = new Uri(this.settings.SearchServiceUrl),
-            SearchKey = new AzureKeyCredential(this.settings.SearchServiceAdminKey),
             IndexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks,
             FieldMappingOptions = new AzureCognitiveSearchIndexFieldMappingOptions
             {
@@ -126,9 +125,14 @@ public class AzureOpenAISearchService : ISearchService
             ShouldRestrictResultScope = request.LimitToDataSource, // Limit responses to data from the data source only
             QueryType = GetQueryType(request),
             SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
-            EmbeddingEndpoint = request.IsVectorSearch ? new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIEmbeddingDeployment}/embeddings?api-version={this.settings.OpenAIApiVersion}") : null,
-            EmbeddingKey = request.IsVectorSearch ? new AzureKeyCredential(this.settings.OpenAIApiKey) : null
+            EmbeddingEndpoint = request.IsVectorSearch ? new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIEmbeddingDeployment}/embeddings?api-version={this.settings.OpenAIApiVersion}") : null
         };
+        configuration.SetSearchKey(this.settings.SearchServiceAdminKey);
+        if (request.IsVectorSearch)
+        {
+            configuration.SetEmbeddingKey(this.settings.OpenAIApiKey);
+        }
+        return configuration;
     }
 
     private AzureCognitiveSearchQueryType GetQueryType(SearchRequest request)
