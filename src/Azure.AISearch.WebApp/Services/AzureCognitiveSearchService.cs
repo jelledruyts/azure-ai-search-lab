@@ -39,10 +39,12 @@ public class AzureCognitiveSearchService : ISearchService
 
         if (request.IsSemanticSearch)
         {
-            searchOptions.SemanticConfigurationName = Constants.ConfigurationNames.SemanticConfigurationNameDefault;
-            searchOptions.QueryLanguage = QueryLanguage.EnUs;
-            searchOptions.QueryAnswer = QueryAnswerType.Extractive;
-            searchOptions.QueryCaption = QueryCaptionType.Extractive;
+            searchOptions.SemanticSearch = new SemanticSearchOptions
+            {
+                SemanticConfigurationName = Constants.ConfigurationNames.SemanticConfigurationNameDefault,
+                QueryAnswer = new QueryAnswer(QueryAnswerType.Extractive),
+                QueryCaption = new QueryCaption(QueryCaptionType.Extractive)
+            };
         }
 
         if (useDocumentsIndex)
@@ -63,11 +65,11 @@ public class AzureCognitiveSearchService : ISearchService
             var queryEmbeddings = await this.embeddingService.GetEmbeddingAsync(request.Query);
 
             // Pass the vector as part of the search options.
-            searchOptions.VectorQueries.Add(new RawVectorQuery
+            searchOptions.VectorSearch = new VectorSearchOptions();
+            searchOptions.VectorSearch.Queries.Add(new VectorizedQuery(queryEmbeddings)
             {
                 KNearestNeighborsCount = request.VectorNearestNeighborsCount ?? Constants.Defaults.VectorNearestNeighborsCount,
-                Fields = { nameof(DocumentChunk.ContentVector) },
-                Vector = queryEmbeddings
+                Fields = { nameof(DocumentChunk.ContentVector) }
             });
         }
 
@@ -77,8 +79,7 @@ public class AzureCognitiveSearchService : ISearchService
         // Perform the search.
         var serviceResponse = await requestedSearchClient.SearchAsync<SearchDocument>(searchText, searchOptions);
         var response = new SearchResponse();
-        response.Answers = serviceResponse.Value.Answers == null ? Array.Empty<SearchAnswer>() : serviceResponse.Value.Answers.Select(a => new SearchAnswer { SearchIndexName = indexName, SearchIndexKey = a.Key, Score = a.Score, Text = string.IsNullOrWhiteSpace(a.Highlights) ? a.Text : a.Highlights }).ToList();
-        response.Captions = serviceResponse.Value.Captions == null ? Array.Empty<string>() : serviceResponse.Value.Captions.Select(c => string.IsNullOrWhiteSpace(c.Highlights) ? c.Text : c.Highlights).ToList();
+        response.Answers = serviceResponse.Value.SemanticSearch.Answers == null ? Array.Empty<SearchAnswer>() : serviceResponse.Value.SemanticSearch.Answers.Select(a => new SearchAnswer { SearchIndexName = indexName, SearchIndexKey = a.Key, Score = a.Score, Text = string.IsNullOrWhiteSpace(a.Highlights) ? a.Text : a.Highlights }).ToList();
         foreach (var result in serviceResponse.Value.GetResults())
         {
             var searchResult = useDocumentsIndex ? GetSearchResultForDocumentsIndex(result) : GetSearchResultForChunksIndex(result, request.QueryType);
@@ -154,7 +155,7 @@ public class AzureCognitiveSearchService : ISearchService
         {
             Score = result.Score,
             Highlights = result.Highlights ?? new Dictionary<string, IList<string>>(),
-            Captions = result.Captions == null ? new List<string>() : result.Captions.Select(c => string.IsNullOrWhiteSpace(c.Highlights) ? c.Text : c.Highlights).ToList()
+            Captions = result.SemanticSearch.Captions == null ? new List<string>() : result.SemanticSearch.Captions.Select(c => string.IsNullOrWhiteSpace(c.Highlights) ? c.Text : c.Highlights).ToList()
         };
     }
 }

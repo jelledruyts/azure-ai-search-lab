@@ -175,19 +175,19 @@ public class AzureCognitiveSearchConfigurationService
                 new SearchField(nameof(Document.Content), SearchFieldDataType.String) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.EnMicrosoft },
                 new SearchField(nameof(Document.FilePath), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.StandardLucene }
             },
-            SemanticSettings = new SemanticSettings
+            SemanticSearch = new SemanticSearch
             {
                 Configurations =
                 {
                     new SemanticConfiguration
                     (
                         Constants.ConfigurationNames.SemanticConfigurationNameDefault,
-                        new PrioritizedFields
+                        new SemanticPrioritizedFields
                         {
-                            TitleField = new SemanticField { FieldName = nameof(Document.Title) },
+                            TitleField = new SemanticField(nameof(Document.Title)),
                             ContentFields =
                             {
-                                new SemanticField { FieldName = nameof(Document.Content) }
+                                new SemanticField(nameof(Document.Content))
                             }
                         }
                     )
@@ -344,27 +344,27 @@ public class AzureCognitiveSearchConfigurationService
                 new SearchField(nameof(DocumentChunk.ChunkOffset), SearchFieldDataType.Int64) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.ChunkLength), SearchFieldDataType.Int64) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.Content), SearchFieldDataType.String) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.EnMicrosoft },
-                new SearchField(nameof(DocumentChunk.ContentVector), SearchFieldDataType.Collection(SearchFieldDataType.Single)) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, VectorSearchDimensions = this.settings.OpenAIEmbeddingVectorDimensions, VectorSearchProfile = Constants.ConfigurationNames.VectorSearchConfigurationNameDefault },
+                new SearchField(nameof(DocumentChunk.ContentVector), SearchFieldDataType.Collection(SearchFieldDataType.Single)) { IsFilterable = false, IsSortable = false, IsFacetable = false, IsSearchable = true, VectorSearchDimensions = this.settings.OpenAIEmbeddingVectorDimensions, VectorSearchProfileName = Constants.ConfigurationNames.VectorSearchConfigurationNameDefault },
                 new SearchField(nameof(DocumentChunk.SourceDocumentId), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.SourceDocumentContentField), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = false },
                 new SearchField(nameof(DocumentChunk.SourceDocumentTitle), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.EnMicrosoft },
                 new SearchField(nameof(DocumentChunk.SourceDocumentFilePath), SearchFieldDataType.String) { IsFilterable = true, IsSortable = true, IsFacetable = false, IsSearchable = true, AnalyzerName = LexicalAnalyzerName.StandardLucene }
             },
-            SemanticSettings = new SemanticSettings
+            SemanticSearch = new SemanticSearch
             {
                 Configurations =
                 {
                     new SemanticConfiguration
                     (
                         Constants.ConfigurationNames.SemanticConfigurationNameDefault,
-                        new PrioritizedFields()
+                        new SemanticPrioritizedFields()
                         {
-                            TitleField = new SemanticField { FieldName = nameof(DocumentChunk.SourceDocumentTitle) },
+                            TitleField = new SemanticField(nameof(DocumentChunk.SourceDocumentTitle)),
                             ContentFields =
                             {
-                                new SemanticField { FieldName = nameof(DocumentChunk.Content) }
+                                new SemanticField(nameof(DocumentChunk.Content))
                             },
-                            KeywordFields =
+                            KeywordsFields =
                             {
                             }
                         }
@@ -375,7 +375,7 @@ public class AzureCognitiveSearchConfigurationService
             {
                 Algorithms =
                 {
-                    new HnswVectorSearchAlgorithmConfiguration(Constants.ConfigurationNames.VectorSearchConfigurationNameDefault)
+                    new HnswAlgorithmConfiguration(Constants.ConfigurationNames.VectorSearchConfigurationNameDefault)
                     {
                         Parameters = new HnswParameters
                         {
