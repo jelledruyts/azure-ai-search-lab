@@ -5,7 +5,7 @@
 azure-functions
 tiktoken
 langchain==0.0.325
-openai
+openai==0.28.1
 azure-identity
 tenacity
 jsonschema
