@@ -41,15 +41,15 @@ graph TD
   functionapp[Function Apps]
   storage[Storage Account]
 
-  webapp -->|Generate query embeddings for vector search (for external vectorization)| aoai
+  webapp -->|External vectorization: Generate query embeddings for vector search| aoai
   webapp -->|Send chat requests| aoai
   webapp -->|Send search requests| acs
   webapp -->|Upload new documents| storage
-  functionapp -->|Generate embeddings for chunks (for external vectorization)| aoai
-  functionapp -->|Push chunks into search index (for push model)| acs
-  acs -->|Generate embeddings for chunks and search queries (for integrated vectorization)| aoai
+  functionapp -->|External vectorization: Generate embeddings for chunks| aoai
+  functionapp -->|Push model: Push chunks into search index| acs
+  acs -->|Integrated vectorization: Generate embeddings for chunks and search queries| aoai
   acs -->|Populate search index from documents| storage
-  acs -->|Generate chunks and embeddings to index (for external vectorization)| functionapp
+  acs -->|External vectorization: Generate chunks and embeddings to index| functionapp
   aoai -->|Find relevant context to build prompt for Azure OpenAI on your data| acs
 ```
 
