@@ -74,7 +74,6 @@ public class ChunkEmbedPush
 
                     log.LogInformation($"Generating embeddings for {chunks.Count} chunk(s) using deployment \"{record.Data.EmbeddingDeploymentName}\".");
                     var index = 0;
-                    var offset = 0L;
                     var documentChunks = new List<DocumentChunk>();
                     foreach (var chunk in chunks)
                     {
@@ -85,9 +84,6 @@ public class ChunkEmbedPush
                         var documentChunk = new DocumentChunk
                         {
                             Id = $"{record.Data.DocumentId}-{index}",
-                            ChunkIndex = index,
-                            ChunkOffset = offset,
-                            ChunkLength = chunk.Length,
                             Content = chunk,
                             ContentVector = embedding,
                             SourceDocumentId = record.Data.DocumentId,
@@ -97,7 +93,6 @@ public class ChunkEmbedPush
                         };
                         documentChunks.Add(documentChunk);
                         index++;
-                        offset += documentChunk.ChunkLength;
                     }
 
                     // Store the document chunks in the search index.
