@@ -74,7 +74,8 @@ public class SearchScenarioProvider
                 {
                     Engine = EngineType.AzureCognitiveSearch,
                     SearchIndex = SearchIndexType.Chunks,
-                    QueryType = QueryType.Vector
+                    QueryType = QueryType.Vector,
+                    UseIntegratedVectorization = true
                 }
             },
             new SearchScenario
@@ -86,7 +87,8 @@ public class SearchScenarioProvider
                 {
                     Engine = EngineType.AzureCognitiveSearch,
                     SearchIndex = SearchIndexType.Chunks,
-                    QueryType = QueryType.HybridSemantic
+                    QueryType = QueryType.HybridSemantic,
+                    UseIntegratedVectorization = true
                 }
             },
             new SearchScenario
@@ -115,7 +117,8 @@ public class SearchScenarioProvider
                     SystemRoleInformation = this.settings.GetDefaultSystemRoleInformation(),
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
                     QueryType = QueryType.HybridSemantic, // As a built-in scenario, always use semantic ranking for best results
-                    LimitToDataSource = true
+                    LimitToDataSource = true,
+                    UseIntegratedVectorization = true
                 }
             },
             new SearchScenario
@@ -129,8 +132,8 @@ public class SearchScenarioProvider
                     OpenAIGptDeployment = this.settings.OpenAIGptDeployment,
                     CustomOrchestrationPrompt = this.settings.GetDefaultCustomOrchestrationPrompt(),
                     SearchIndex = SearchIndexType.Chunks, // As a built-in scenario, always use the chunks index for best results
-                    QueryType = QueryType.HybridSemantic // As a built-in scenario, always use semantic ranking for best results
-                }
+                    QueryType = QueryType.HybridSemantic, // As a built-in scenario, always use semantic ranking for best results
+                    UseIntegratedVectorization = true                }
             }
         };
     }

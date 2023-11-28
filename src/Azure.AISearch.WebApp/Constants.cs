@@ -7,11 +7,14 @@ public static class Constants
     public static class ConfigurationNames
     {
         public const string SemanticConfigurationNameDefault = "default";
-        public const string VectorSearchConfigurationNameDefault = "default";
+        public const string VectorSearchProfileNameDefault = "default-profile";
+        public const string VectorSearchAlgorithNameDefault = "default-algorithm";
+        public const string VectorSearchVectorizerNameDefault = "default-vectorizer";
     }
 
     public static class SearchIndexerSkillTypes
     {
+        public const string Integrated = "integrated";
         public const string Pull = "pull";
         public const string Push = "push";
     }

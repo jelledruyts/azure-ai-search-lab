@@ -55,10 +55,6 @@
                         <div class="ms-2 me-auto mb-2">
                             <div>
                                 <code>@searchResult.DocumentTitle</code>
-                                @if (searchResult.ChunkIndex != null)
-                                {
-                                    <span> (chunk #<code>@searchResult.ChunkIndex</code>)</span>
-                                }
                             </div>
                             @if (searchResult.Captions.Any())
                             {

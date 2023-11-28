@@ -112,7 +112,12 @@
                     <label class="form-label">Search indexer skill type</label>
                     <div>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="@nameof(AppSettingsOverride.SearchIndexerSkillType)" id="appSettingsOverride-SearchIndexerSkillType-Pull" value="@Constants.SearchIndexerSkillTypes.Pull" checked="@(settings.SearchIndexerSkillType != Constants.SearchIndexerSkillTypes.Push)">
+                            <input class="form-check-input" type="radio" name="@nameof(AppSettingsOverride.SearchIndexerSkillType)" id="appSettingsOverride-SearchIndexerSkillType-Integrated" value="@Constants.SearchIndexerSkillTypes.Integrated" checked="@(string.IsNullOrWhiteSpace(settings.SearchIndexerSkillType) || settings.SearchIndexerSkillType == Constants.SearchIndexerSkillTypes.Integrated)">
+                            <label class="form-check-label" for="appSettingsOverride-SearchIndexerSkillType-Integrated">Integrated</label>
+                            <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use <a href='https://learn.microsoft.com/azure/search/vector-search-integrated-vectorization' target='_blank'>integrated vectorization</a> to chunk the documents and generate the embeddings."><i class="bi bi-info-circle"></i></span>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="@nameof(AppSettingsOverride.SearchIndexerSkillType)" id="appSettingsOverride-SearchIndexerSkillType-Pull" value="@Constants.SearchIndexerSkillTypes.Pull" checked="@(settings.SearchIndexerSkillType == Constants.SearchIndexerSkillTypes.Pull)">
                             <label class="form-check-label" for="appSettingsOverride-SearchIndexerSkillType-Pull">Pull</label>
                             <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use the <a href='https://github.com/Azure-Samples/azure-search-power-skills/tree/main/Vector/EmbeddingGenerator' target='_blank'>Azure OpenAI Embeddings Generator power skill</a> to chunk the documents and generate the embeddings, return these as part of the response from the custom skill, store them as JSON blobs in a <a href='https://learn.microsoft.com/azure/search/knowledge-store-concept-intro' target='_blank'>knowledge store</a>, and run a separate indexer to pull these JSON documents from blob storage into the <code>Chunks</code> index."><i class="bi bi-info-circle"></i></span>
                         </div>
@@ -124,17 +129,27 @@
                     </div>
                 </div>
                 <div class="mb-2">
-                    <label class="form-label" for="appSettingsOverride-TextEmbedderNumTokens">Number of tokens per chunk</label>
+                    <label class="form-label" for="appSettingsOverride-TextChunkerPageLength">Integrated vectorization: number of characters per chunk</label>
+                    <span class="info-tip" data-bs-toggle="popover" data-bs-content="The source data will be split up into smaller pages (chunks) of approximately the number of characters you specify here. Embeddings are generated per chunk so the larger the chunks, the more likely you will hit token limits and the more likely the vector representation will be less specific (as it's generated from a larger body of content). Experiment with this value based on the type of content being chunked and the kinds of recall performance required for retrieval scenarios."><i class="bi bi-info-circle"></i></span>
+                    <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextChunkerPageLength)" id="appSettingsOverride-TextChunkerPageLength" value="@settings.TextChunkerPageLength">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" for="appSettingsOverride-TextChunkerPageOverlap">Integrated vectorization: character overlap between chunks</label>
+                    <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of tokens to overlap between consecutive chunks. This is useful to maintain context continuity between chunks. By including some overlapping tokens, you can ensure that a small portion of context is shared between adjacent chunks, which can help with preserving the meaning and coherence when processing the text with language models."><i class="bi bi-info-circle"></i></span>
+                    <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextChunkerPageOverlap)" id="appSettingsOverride-TextChunkerPageOverlap" value="@settings.TextChunkerPageOverlap">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" for="appSettingsOverride-TextEmbedderNumTokens">External vectorization: number of tokens per chunk</label>
                     <span class="info-tip" data-bs-toggle="popover" data-bs-content="The source data will be split up into smaller chunks of approximately the token size you specify here. Embeddings are generated per chunk so the larger the chunks, the more likely you will hit token limits and the more likely the vector representation will be less specific (as it's generated from a larger body of content). Experiment with this value based on the type of content being chunked and the kinds of recall performance required for retrieval scenarios."><i class="bi bi-info-circle"></i></span>
                     <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextEmbedderNumTokens)" id="appSettingsOverride-TextEmbedderNumTokens" value="@settings.TextEmbedderNumTokens">
                 </div>
                 <div class="mb-2">
-                    <label class="form-label" for="appSettingsOverride-TextEmbedderTokenOverlap">Token overlap between chunks</label>
+                    <label class="form-label" for="appSettingsOverride-TextEmbedderTokenOverlap">External vectorization: token overlap between chunks</label>
                     <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of tokens to overlap between consecutive chunks. This is useful to maintain context continuity between chunks. By including some overlapping tokens, you can ensure that a small portion of context is shared between adjacent chunks, which can help with preserving the meaning and coherence when processing the text with language models."><i class="bi bi-info-circle"></i></span>
                     <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextEmbedderTokenOverlap)" id="appSettingsOverride-TextEmbedderTokenOverlap" value="@settings.TextEmbedderTokenOverlap">
                 </div>
                 <div class="mb-2">
-                    <label class="form-label" for="appSettingsOverride-TextEmbedderMinChunkSize">Minimum chunk size</label>
+                    <label class="form-label" for="appSettingsOverride-TextEmbedderMinChunkSize">External vectorization: minimum chunk size</label>
                     <span class="info-tip" data-bs-toggle="popover" data-bs-content="The minimum number of tokens that a chunk should contain in order to be included in the <code>Chunks</code> index. This helps avoid that small chunks (with only a few words for example) have a disproportional impact on search results."><i class="bi bi-info-circle"></i></span>
                     <input type="number" class="form-control" name="@nameof(AppSettingsOverride.TextEmbedderMinChunkSize)" id="appSettingsOverride-TextEmbedderMinChunkSize" value="@settings.TextEmbedderMinChunkSize">
                 </div>

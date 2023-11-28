@@ -61,6 +61,8 @@
         "openaiApiVersion": "2023-06-01-preview",
         "storageContainerNameBlobDocuments": "blob-documents",
         "storageContainerNameBlobChunks": "blob-chunks",
+        "textChunkerPageLength": 2000,
+        "textChunkerPageOverlap": 500,
         "textEmbedderNumTokens": 2048,
         "textEmbedderTokenOverlap": 0,
         "textEmbedderMinChunkSize": 10,
@@ -533,6 +535,14 @@
         "textEmbedderFunctionApiKey": {
             "type": "string",
             "value": "[variables('functionApiKey')]"
+        },
+        "textChunkerPageLength": {
+            "type": "string",
+            "value": "[variables('textChunkerPageLength')]"
+        },
+        "textChunkerPageOverlap": {
+            "type": "string",
+            "value": "[variables('textChunkerPageOverlap')]"
         },
         "textEmbedderNumTokens": {
             "type": "int",
