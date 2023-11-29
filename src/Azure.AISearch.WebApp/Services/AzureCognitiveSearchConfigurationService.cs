@@ -397,7 +397,8 @@ public class AzureCognitiveSearchConfigurationService
 
     private SearchIndex GetChunksSearchIndex(string chunkIndexName, AppSettingsOverride? settingsOverride)
     {
-        var chunksSearchIndex = new SearchIndex(chunkIndexName)
+        ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
+        return new SearchIndex(chunkIndexName)
         {
             Fields =
             {
@@ -434,6 +435,9 @@ public class AzureCognitiveSearchConfigurationService
                 Profiles =
                 {
                     new VectorSearchProfile(Constants.ConfigurationNames.VectorSearchProfileNameDefault, Constants.ConfigurationNames.VectorSearchAlgorithNameDefault)
+                    {
+                        Vectorizer = Constants.ConfigurationNames.VectorSearchVectorizerNameDefault
+                    }
                 },
                 Algorithms =
                 {
@@ -447,28 +451,21 @@ public class AzureCognitiveSearchConfigurationService
                             Metric = Constants.Defaults.HnswParametersMetric
                         }
                     }
+                },
+                Vectorizers =
+                {
+                    new AzureOpenAIVectorizer(Constants.ConfigurationNames.VectorSearchVectorizerNameDefault)
+                    {
+                        AzureOpenAIParameters = new AzureOpenAIParameters
+                        {
+                            ResourceUri = new Uri(this.settings.OpenAIEndpoint),
+                            DeploymentId = this.settings.OpenAIEmbeddingDeployment,
+                            ApiKey = this.settings.OpenAIApiKey
+                        }
+                    }
                 }
             }
         };
-
-        var searchIndexerSkillType = GetSearchIndexerSkillType(settingsOverride);
-        if (string.Equals(searchIndexerSkillType, Constants.SearchIndexerSkillTypes.Integrated, StringComparison.InvariantCultureIgnoreCase))
-        {
-            // For integrated vectorization, use the OpenAI vectorizer to generate the embeddings for the search query itself.
-            ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
-            chunksSearchIndex.VectorSearch.Vectorizers.Add(new AzureOpenAIVectorizer(Constants.ConfigurationNames.VectorSearchVectorizerNameDefault)
-            {
-                AzureOpenAIParameters = new AzureOpenAIParameters
-                {
-                    ResourceUri = new Uri(this.settings.OpenAIEndpoint),
-                    DeploymentId = this.settings.OpenAIEmbeddingDeployment,
-                    ApiKey = this.settings.OpenAIApiKey
-                }
-            });
-            chunksSearchIndex.VectorSearch.Profiles[0].Vectorizer = Constants.ConfigurationNames.VectorSearchVectorizerNameDefault;
-        }
-
-        return chunksSearchIndex;
     }
 
     private TimeSpan GetIndexingSchedule(AppSettingsOverride? settingsOverride)
