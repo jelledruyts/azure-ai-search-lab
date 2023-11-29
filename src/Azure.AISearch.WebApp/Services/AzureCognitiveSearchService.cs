@@ -121,7 +121,6 @@ public class AzureCognitiveSearchService : ISearchService
         searchOptions.Select.Add(nameof(DocumentChunk.SourceDocumentId));
         searchOptions.Select.Add(nameof(DocumentChunk.SourceDocumentTitle));
         searchOptions.Select.Add(nameof(DocumentChunk.Content));
-        searchOptions.Select.Add(nameof(DocumentChunk.ChunkIndex));
         if (queryType != QueryType.Vector)
         {
             // Don't request highlights for vector-only search, as that doesn't make
@@ -137,7 +136,6 @@ public class AzureCognitiveSearchService : ISearchService
         searchResult.SearchIndexKey = result.Document.GetString(nameof(DocumentChunk.Id));
         searchResult.DocumentId = result.Document.GetString(nameof(DocumentChunk.SourceDocumentId));
         searchResult.DocumentTitle = result.Document.GetString(nameof(DocumentChunk.SourceDocumentTitle));
-        searchResult.ChunkIndex = result.Document.GetInt32(nameof(DocumentChunk.ChunkIndex));
 
         if (queryType == QueryType.Vector)
         {
