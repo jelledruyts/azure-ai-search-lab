@@ -411,6 +411,14 @@
                             "value": "[variables('storageContainerNameBlobChunks')]"
                         },
                         {
+                            "name": "TextChunkerPageLength",
+                            "value": "[variables('textChunkerPageLength')]"
+                        },
+                        {
+                            "name": "TextChunkerPageOverlap",
+                            "value": "[variables('textChunkerPageOverlap')]"
+                        },
+                        {
                             "name": "TextEmbedderFunctionEndpointPython",
                             "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppNamePython')), '2022-09-01').defaultHostName, '/api/chunk-embed')]"
                         },
@@ -537,11 +545,11 @@
             "value": "[variables('functionApiKey')]"
         },
         "textChunkerPageLength": {
-            "type": "string",
+            "type": "int",
             "value": "[variables('textChunkerPageLength')]"
         },
         "textChunkerPageOverlap": {
-            "type": "string",
+            "type": "int",
             "value": "[variables('textChunkerPageOverlap')]"
         },
         "textEmbedderNumTokens": {

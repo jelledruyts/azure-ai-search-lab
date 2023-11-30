@@ -201,7 +201,7 @@ public class AzureCognitiveSearchConfigurationService
         var searchIndexerSkillType = GetSearchIndexerSkillType(settingsOverride);
         var skillset = new SearchIndexerSkillset(GetSkillsetName(indexName), Array.Empty<SearchIndexerSkill>());
 
-        if (string.Equals(searchIndexerSkillType, Constants.SearchIndexerSkillTypes.Integrated, StringComparison.InvariantCultureIgnoreCase))
+        if (string.IsNullOrWhiteSpace(searchIndexerSkillType) || string.Equals(searchIndexerSkillType, Constants.SearchIndexerSkillTypes.Integrated, StringComparison.InvariantCultureIgnoreCase))
         {
             // Use integrated vectorization (no custom skills required).
             ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
