@@ -1,9 +1,3 @@
-// TODO: This doesn't work today, the API returns messages including the
-// citations messages we need, but the title and filepath etc are null
-// so it seems the field mappings aren't fully working (perhaps because
-// the serialized names are wrong? ContentFieldNames is serialized as
-// "contentFieldNames" but UrlFieldName as "urlField" for exampel).
-
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Azure.AI.OpenAI;
@@ -36,19 +30,19 @@ public class AzureOpenAISearchService : ISearchService
 
         var searchResponse = new SearchResponse();
         var chatCompletionsOptions = new ChatCompletionsOptions { DeploymentName = this.settings.OpenAIGptDeployment };
-        chatCompletionsOptions.Messages.Add(new ChatMessage(ChatRole.System, request.SystemRoleInformation));
+        chatCompletionsOptions.Messages.Add(new ChatRequestSystemMessage(request.SystemRoleInformation));
 
         if (request.History != null && request.History.Any())
         {
             var role = ChatRole.User;
             foreach (var item in request.History)
             {
-                chatCompletionsOptions.Messages.Add(new ChatMessage(role, item));
+                chatCompletionsOptions.Messages.Add(role == ChatRole.User ? new ChatRequestUserMessage(item) : new ChatRequestAssistantMessage(item));
                 searchResponse.History.Add(item);
                 role = role == ChatRole.User ? ChatRole.Assistant : ChatRole.User;
             }
         }
-        chatCompletionsOptions.Messages.Add(new ChatMessage(ChatRole.User, request.Query));
+        chatCompletionsOptions.Messages.Add(new ChatRequestUserMessage(request.Query));
         searchResponse.History.Add(request.Query);
 
         if (request.DataSource == DataSourceType.AzureCognitiveSearch)
@@ -84,7 +78,6 @@ public class AzureOpenAISearchService : ISearchService
                 var citationIndex = 0;
                 foreach (var citation in content.Citations)
                 {
-                    // TODO: citation title etc are null here!
                     answerText = answerText.Replace($"[doc{++citationIndex}]", $"<cite>{citation.Title}</cite>", StringComparison.OrdinalIgnoreCase);
                     searchResponse.SearchResults.Add(new SearchResult
                     {
@@ -110,9 +103,10 @@ public class AzureOpenAISearchService : ISearchService
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIApiKey);
         var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
-        var configuration = new AzureCognitiveSearchChatExtensionConfiguration
+        return new AzureCognitiveSearchChatExtensionConfiguration
         {
             SearchEndpoint = new Uri(this.settings.SearchServiceUrl),
+            Key = this.settings.SearchServiceAdminKey,
             IndexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks,
             FieldMappingOptions = new AzureCognitiveSearchIndexFieldMappingOptions
             {
@@ -125,14 +119,9 @@ public class AzureOpenAISearchService : ISearchService
             ShouldRestrictResultScope = request.LimitToDataSource, // Limit responses to data from the data source only
             QueryType = GetQueryType(request),
             SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
-            EmbeddingEndpoint = request.IsVectorSearch ? new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIEmbeddingDeployment}/embeddings?api-version={this.settings.OpenAIApiVersion}") : null
+            EmbeddingEndpoint = request.IsVectorSearch ? new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIEmbeddingDeployment}/embeddings?api-version={this.settings.OpenAIApiVersion}") : null,
+            EmbeddingKey = request.IsVectorSearch ? this.settings.OpenAIApiKey : null
         };
-        configuration.SetSearchKey(this.settings.SearchServiceAdminKey);
-        if (request.IsVectorSearch)
-        {
-            configuration.SetEmbeddingKey(this.settings.OpenAIApiKey);
-        }
-        return configuration;
     }
 
     private AzureCognitiveSearchQueryType GetQueryType(SearchRequest request)
