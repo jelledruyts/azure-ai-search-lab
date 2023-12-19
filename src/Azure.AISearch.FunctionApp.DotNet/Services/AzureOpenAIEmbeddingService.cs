@@ -17,7 +17,7 @@ public class AzureOpenAIEmbeddingService
 
     public async Task<IReadOnlyList<float>> GetEmbeddingAsync(string embeddingDeploymentName, string text)
     {
-        var response = await this.openAIClient.GetEmbeddingsAsync(embeddingDeploymentName, new EmbeddingsOptions(text));
-        return response.Value.Data[0].Embedding;
+        var response = await this.openAIClient.GetEmbeddingsAsync(new EmbeddingsOptions(embeddingDeploymentName, new[] { text }));
+        return response.Value.Data[0].Embedding.ToArray();
     }
 }
