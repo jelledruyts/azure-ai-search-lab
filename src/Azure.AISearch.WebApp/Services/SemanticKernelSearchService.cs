@@ -1,7 +1,7 @@
 using System.Text;
 using Azure.AISearch.WebApp.Models;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace Azure.AISearch.WebApp.Services;
 
@@ -35,10 +35,11 @@ public class SemanticKernelSearchService : ISearchService
         var openAIGptDeployment = string.IsNullOrEmpty(request.OpenAIGptDeployment) ? this.settings.OpenAIGptDeployment : request.OpenAIGptDeployment;
         ArgumentNullException.ThrowIfNull(openAIGptDeployment);
         var prompt = string.IsNullOrWhiteSpace(request.CustomOrchestrationPrompt) ? this.settings.GetDefaultCustomOrchestrationPrompt() : request.CustomOrchestrationPrompt;
-        var kernel = Kernel.Builder
-            .WithAzureChatCompletionService(openAIGptDeployment, this.settings.OpenAIEndpoint, this.settings.OpenAIApiKey, true)
-            .Build();
-        var requestSettings = new OpenAIRequestSettings
+        var kernelBuilder = Kernel.CreateBuilder();
+        kernelBuilder.Services.AddLogging(c => c.AddDebug().SetMinimumLevel(LogLevel.Trace));
+        kernelBuilder.AddAzureOpenAIChatCompletion(openAIGptDeployment, this.settings.OpenAIEndpoint, this.settings.OpenAIApiKey);
+        var kernel = kernelBuilder.Build();
+        var executionSettings = new OpenAIPromptExecutionSettings
         {
             MaxTokens = request.MaxTokens ?? Constants.Defaults.MaxTokens,
             Temperature = request.Temperature ?? Constants.Defaults.Temperature,
@@ -47,12 +48,14 @@ public class SemanticKernelSearchService : ISearchService
             PresencePenalty = request.PresencePenalty ?? Constants.Defaults.PresencePenalty,
             StopSequences = (request.StopSequences ?? Constants.Defaults.StopSequences).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         };
-        var function = kernel.CreateSemanticFunction(prompt, requestSettings);
+        var function = kernel.CreateFunctionFromPrompt(prompt, executionSettings);
 
         var response = new SearchResponse();
-        var context = kernel.CreateNewContext();
-        context.Variables["query"] = request.Query;
-
+        var arguments = new KernelArguments
+        {
+            { "query", request.Query }
+        };
+        
         // Query the search index for relevant data first, by passing through the original request
         // to the Azure AI Search service.
         var azureCognitiveSearchResponse = await this.azureCognitiveSearchService.SearchAsync(request);
@@ -74,13 +77,13 @@ public class SemanticKernelSearchService : ISearchService
             }
         }
 
-        // Add the sources string to the context, so that the semantic function can use it to construct the prompt.
-        context.Variables["sources"] = sourcesBuilder.ToString();
+        // Add the sources string to the arguments, so that the semantic function can use it to construct the prompt.
+        arguments.Add("sources", sourcesBuilder.ToString());
 
         // Run the semantic function to generate the answer.
         try
         {
-            var kernelResult = await kernel.RunAsync(context.Variables, function);
+            var kernelResult = await kernel.InvokeAsync(function, arguments);
             var answer = kernelResult.GetValue<string>();
             if (!string.IsNullOrWhiteSpace(answer))
             {
