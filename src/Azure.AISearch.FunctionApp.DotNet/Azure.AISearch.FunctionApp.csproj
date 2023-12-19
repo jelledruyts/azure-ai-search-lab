@@ -7,13 +7,13 @@
     <UserSecretsId>aspnet-Azure.AISearch.FunctionApp-f7443d62-1b7f-4015-9c0f-643ec0cf8bf6</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.7" />
-    <PackageReference Include="Azure.Search.Documents" Version="11.5.0-beta.4" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.12" />
+    <PackageReference Include="Azure.Search.Documents" Version="11.5.0-beta.5" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.2.0" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="0.23.230906.2-preview" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.0.0-beta3" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
