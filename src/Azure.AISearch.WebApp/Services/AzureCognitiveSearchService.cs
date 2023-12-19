@@ -33,6 +33,7 @@ public class AzureCognitiveSearchService : ISearchService
         var searchOptions = new SearchOptions
         {
             QueryType = request.IsSemanticSearch ? SearchQueryType.Semantic : (request.QuerySyntax == QuerySyntax.Lucene ? SearchQueryType.Full : SearchQueryType.Simple),
+            Size = request.DocumentCount ?? Constants.Defaults.DocumentCount,
             HighlightPreTag = "<mark>",
             HighlightPostTag = "</mark>"
         };

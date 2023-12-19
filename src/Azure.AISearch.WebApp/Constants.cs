@@ -58,6 +58,8 @@ Answer:
         public const double FrequencyPenalty = 0.0;
         public const double PresencePenalty = 0.0;
         public const string StopSequences = "";
+        public const int Strictness = 3;
+        public const int DocumentCount = 5;
         public const int HnswParametersM = 4;
         public const int HnswParametersEfConstruction = 400;
         public const int HnswParametersEfSearch = 500;

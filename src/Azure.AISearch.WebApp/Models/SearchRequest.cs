@@ -21,6 +21,8 @@ public class SearchRequest
     public double? FrequencyPenalty { get; set; } = Constants.Defaults.FrequencyPenalty;
     public double? PresencePenalty { get; set; } = Constants.Defaults.PresencePenalty;
     public string? StopSequences { get; set; } = Constants.Defaults.StopSequences;
+    public int? Strictness { get; set; } = Constants.Defaults.Strictness;
+    public int? DocumentCount { get; set; } = Constants.Defaults.DocumentCount;
 
     public bool IsVectorSearch => QueryType == Models.QueryType.Vector || QueryType == Models.QueryType.HybridStandard || QueryType == Models.QueryType.HybridSemantic;
     public bool IsSemanticSearch => QueryType == Models.QueryType.TextSemantic || QueryType == Models.QueryType.HybridSemantic;

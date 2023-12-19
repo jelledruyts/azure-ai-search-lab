@@ -274,8 +274,8 @@
                         <label class="form-check-label" for="searchRequest-DataSource-AzureCognitiveSearch">Azure AI Search</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use source data from an Azure AI Search index. For best results, you should use the <code>Chunks</code> index, as this contains smaller and typically more contextually relevant pieces of information. This makes the prompt that is sent to the AI model better suited to generate a meaningful response from."><i class="bi bi-info-circle"></i></span>
                     </div>
-                    <div class="form-check form-check-inline form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.LimitToDataSource)" id="searchRequest-LimitToDataSource" value="true" v-model="searchRequest.limitToDataSource" v-bind:disabled="searchRequest.dataSource == '@DataSourceType.None'">
+                    <div class="form-check form-check-inline form-switch" v-show="searchRequest.dataSource != '@DataSourceType.None'">
+                        <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.LimitToDataSource)" id="searchRequest-LimitToDataSource" value="true" v-model="searchRequest.limitToDataSource">
                         <input type="hidden" name="@nameof(SearchRequest.LimitToDataSource)" value="false" />
                         <label class="form-check-label" for="searchRequest-LimitToDataSource">Limit to your data</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Limit responses to your data content only, not including the data that was used for training the model."><i class="bi bi-info-circle"></i></span>
@@ -312,18 +312,18 @@
                         <label class="form-check-label" for="searchRequest-QueryType-TextSemantic">Semantic keyword</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use <a href='https://learn.microsoft.com/azure/search/semantic-search-overview' target='_blank'>semantic ranking</a>, which returns more relevant results by applying language understanding to initial search results. It can also return <a href='https://learn.microsoft.com/azure/search/semantic-how-to-query-request' target='_blank'>semantic captions</a> (parts of a document that best summarize the content) and even <a href='https://learn.microsoft.com/azure/search/semantic-answers' target='_blank'>semantic answers</a> (direct answers to queries that look like a question). In all cases, the responses aren't AI-generated but come directly from the source data."><i class="bi bi-info-circle"></i></span>
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndex == '@SearchIndexType.Documents'">
+                    <div class="form-check form-check-inline" v-show="searchRequest.searchIndex != '@SearchIndexType.Documents'">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-Vector" value="@QueryType.Vector" v-model="searchRequest.queryType">
                         <label class="form-check-label" for="searchRequest-QueryType-Vector">Vector only</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="First send the search query to an <a href='https://learn.microsoft.com/azure/ai-services/openai/how-to/embeddings' target='_blank'>embedding model in Azure OpenAI</a> to generate a vector representing the query itself. Then perform a <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector search</a> to retrieve the nearest neighbors in vector space from the chunked and vectorized documents in the <code>Chunks</code> index. This should return results that are semantically similar to the query, as determined by the embedding model's vector representations."><i class="bi bi-info-circle"></i></span>
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridStandard" value="@QueryType.HybridStandard" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndex == '@SearchIndexType.Documents'">
+                    <div class="form-check form-check-inline" v-show="searchRequest.searchIndex != '@SearchIndexType.Documents'">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridStandard" value="@QueryType.HybridStandard" v-model="searchRequest.queryType">
                         <label class="form-check-label" for="searchRequest-QueryType-HybridStandard">Standard hybrid (keyword + vector)</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Combine the results of a <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector search</a> with the regular <a href='https://learn.microsoft.com/azure/search/search-lucene-query-architecture' target='_blank'>keyword search</a> results into a single ranked response."><i class="bi bi-info-circle"></i></span>
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" v-model="searchRequest.queryType" v-bind:disabled="searchRequest.searchIndex == '@SearchIndexType.Documents'">
+                    <div class="form-check form-check-inline" v-show="searchRequest.searchIndex != '@SearchIndexType.Documents'">
+                        <input class="form-check-input" type="radio" name="@nameof(SearchRequest.QueryType)" id="searchRequest-QueryType-HybridSemantic" value="@QueryType.HybridSemantic" v-model="searchRequest.queryType">
                         <label class="form-check-label" for="searchRequest-QueryType-HybridSemantic">Semantic hybrid (keyword + vector)</label>
                         <span class="info-tip" data-bs-toggle="popover" data-bs-content="Combine the results of <a href='https://learn.microsoft.com/azure/search/vector-search-overview' target='_blank'>vector search</a> and <a href='https://learn.microsoft.com/azure/search/semantic-search-overview' target='_blank'>search with semantic ranking</a> into a single ranked response. Compared to standard hybrid search, this provides even more accuracy with L2 reranking using the same language models that power Bing."><i class="bi bi-info-circle"></i></span>
                     </div>
@@ -346,6 +346,30 @@
                 </div>
             </div>
 
+            <div class="mb-2" v-show="!(searchRequest.engine == '@EngineType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.None')">
+                <label class="form-label">Result parameters</label>
+                <div class="row row-cols-lg-auto g-3 align-items-center">
+                    <div class="col-12">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Document count
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="The number of documents to return."><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="number" class="form-control form-control-small" name="@nameof(SearchRequest.DocumentCount)" value="@Model.SearchRequest.DocumentCount" />
+                        </div>
+                    </div>
+                    <div class="col-12" v-show="searchRequest.engine == '@EngineType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.AzureCognitiveSearch'">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                Strictness
+                                <span class="info-tip" data-bs-toggle="popover" data-bs-content="Sets the threshold to categorize documents as relevant to your queries. Raising the value means a higher threshold for relevance and filters out more less-relevant documents for responses. Setting this value too high might cause the model to fail to generate responses due to limited available documents."><i class="bi bi-info-circle"></i></span>
+                            </div>
+                            <input type="number" class="form-control form-control-small" name="@nameof(SearchRequest.Strictness)" value="@Model.SearchRequest.Strictness" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="mb-2" v-show="!(searchRequest.engine == '@EngineType.AzureOpenAI' && searchRequest.dataSource == '@DataSourceType.None') && (searchRequest.queryType == '@QueryType.Vector' || searchRequest.queryType == '@QueryType.HybridStandard' || searchRequest.queryType == '@QueryType.HybridSemantic')">
                 <label class="form-label">Vector parameters</label>
                 <div class="row row-cols-lg-auto g-3 align-items-center">
@@ -359,8 +383,8 @@
                         </div>
                     </div>
                     <div class="col-12">
-                        <div class="form-check form-check-inline form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.UseIntegratedVectorization)" id="searchRequest-UseIntegratedVectorization" value="true" v-model="searchRequest.useIntegratedVectorization" v-bind:disabled="searchRequest.engine == '@EngineType.AzureOpenAI'">
+                        <div class="form-check form-check-inline form-switch" v-show="searchRequest.engine != '@EngineType.AzureOpenAI'">
+                            <input class="form-check-input" type="checkbox" role="switch" name="@nameof(SearchRequest.UseIntegratedVectorization)" id="searchRequest-UseIntegratedVectorization" value="true" v-model="searchRequest.useIntegratedVectorization">
                             <input type="hidden" name="@nameof(SearchRequest.UseIntegratedVectorization)" value="false" />
                             <label class="form-check-label" for="searchRequest-UseIntegratedVectorization">Use integrated vectorization</label>
                             <span class="info-tip" data-bs-toggle="popover" data-bs-content="Use <a href='https://learn.microsoft.com/azure/search/vector-search-integrated-vectorization' target='_blank'>integrated vectorization</a> to let Azure AI Search generate the vector embedding for the search query text, rather than the app doing that upfront and sending the vector directly to the search service."><i class="bi bi-info-circle"></i></span>
@@ -369,7 +393,7 @@
                 </div>
             </div>
 
-            <div class="mb-2" v-show="searchRequest.engine == '@EngineType.CustomOrchestration'">
+            <div class="mb-2" v-show="searchRequest.engine == '@EngineType.CustomOrchestration' || searchRequest.engine == '@EngineType.AzureOpenAI'">
                 <label class="form-label">Model parameters</label>
                 <div class="row row-cols-lg-auto g-3 align-items-center">
                     <div class="col-12">

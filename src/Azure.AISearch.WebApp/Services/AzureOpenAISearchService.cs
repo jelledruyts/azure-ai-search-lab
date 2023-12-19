@@ -28,7 +28,23 @@ public class AzureOpenAISearchService : ISearchService
         ArgumentNullException.ThrowIfNull(request.Query);
 
         var searchResponse = new SearchResponse();
-        var chatCompletionsOptions = new ChatCompletionsOptions { DeploymentName = this.settings.OpenAIGptDeployment };
+        var chatCompletionsOptions = new ChatCompletionsOptions
+        {
+            DeploymentName = this.settings.OpenAIGptDeployment,
+            MaxTokens = request.MaxTokens ?? Constants.Defaults.MaxTokens,
+            Temperature = (float)(request.Temperature ?? Constants.Defaults.Temperature),
+            NucleusSamplingFactor = (float)(request.TopP ?? Constants.Defaults.TopP),
+            FrequencyPenalty = (float)(request.FrequencyPenalty ?? Constants.Defaults.FrequencyPenalty),
+            PresencePenalty = (float)(request.PresencePenalty ?? Constants.Defaults.PresencePenalty),
+        };
+        var stopSequences = (request.StopSequences ?? Constants.Defaults.StopSequences).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (stopSequences.Any())
+        {
+            foreach (var stopSequence in stopSequences)
+            {
+                chatCompletionsOptions.StopSequences.Add(stopSequence);
+            }
+        }
         chatCompletionsOptions.Messages.Add(new ChatRequestSystemMessage(request.SystemRoleInformation));
 
         if (request.History != null && request.History.Any())
@@ -66,27 +82,30 @@ public class AzureOpenAISearchService : ISearchService
             throw new InvalidOperationException("Azure OpenAI didn't return a meaningful response.");
         }
 
-        // Process citations within the answer, which take the form "[doc1][doc2]..." and refer to the (1-based) index of
-        // the citations in the tool message.
-        foreach (var extensionMessage in answerMessage.AzureExtensionsContext.Messages.Where(m => m.Role == ChatRole.Tool))
+        if (answerMessage.AzureExtensionsContext != null)
         {
-            Console.WriteLine(extensionMessage.Content);
-            var content = JsonSerializer.Deserialize<ChatResponseMessageContent>(extensionMessage.Content!);
-            if (content?.Citations != null && content.Citations.Any())
+            // Process citations within the answer, which take the form "[doc1][doc2]..." and refer to the (1-based) index of
+            // the citations in the tool message.
+            foreach (var extensionMessage in answerMessage.AzureExtensionsContext.Messages.Where(m => m.Role == ChatRole.Tool))
             {
-                var citationIndex = 0;
-                foreach (var citation in content.Citations)
+                Console.WriteLine(extensionMessage.Content);
+                var content = JsonSerializer.Deserialize<ChatResponseMessageContent>(extensionMessage.Content!);
+                if (content?.Citations != null && content.Citations.Any())
                 {
-                    answerText = answerText.Replace($"[doc{++citationIndex}]", $"<cite>{citation.Title}</cite>", StringComparison.OrdinalIgnoreCase);
-                    searchResponse.SearchResults.Add(new SearchResult
+                    var citationIndex = 0;
+                    foreach (var citation in content.Citations)
                     {
-                        DocumentId = citation.Id,
-                        DocumentTitle = citation.Title,
-                        Captions = string.IsNullOrWhiteSpace(citation.Content) ? Array.Empty<string>() : new[] { citation.Content }
-                    });
+                        answerText = answerText.Replace($"[doc{++citationIndex}]", $"<cite>{citation.Title}</cite>", StringComparison.OrdinalIgnoreCase);
+                        searchResponse.SearchResults.Add(new SearchResult
+                        {
+                            DocumentId = citation.Id,
+                            DocumentTitle = citation.Title,
+                            Captions = string.IsNullOrWhiteSpace(citation.Content) ? Array.Empty<string>() : new[] { citation.Content }
+                        });
+                    }
+                    // Stop looping through the tool messages once we find the first one holding the citations.
+                    break;
                 }
-                // Stop looping through the tool messages once we find the first one holding the citations.
-                break;
             }
         }
 
@@ -117,6 +136,9 @@ public class AzureOpenAISearchService : ISearchService
             },
             ShouldRestrictResultScope = request.LimitToDataSource, // Limit responses to data from the data source only
             QueryType = GetQueryType(request),
+            RoleInformation = request.SystemRoleInformation ?? Constants.Defaults.SystemRoleInformation,
+            Strictness = request.Strictness ?? Constants.Defaults.Strictness,
+            DocumentCount = request.DocumentCount ?? Constants.Defaults.DocumentCount,
             SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
             EmbeddingEndpoint = request.IsVectorSearch ? new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIEmbeddingDeployment}/embeddings?api-version={this.settings.OpenAIApiVersion}") : null,
             EmbeddingKey = request.IsVectorSearch ? this.settings.OpenAIApiKey : null
