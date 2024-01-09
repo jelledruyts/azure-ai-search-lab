@@ -58,7 +58,7 @@
         "webPlanName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-web-plan')]",
         "webAppName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-web-app')]",
         "searchServiceName": "[concat(parameters('resourcePrefix'), '-', uniquestring(resourceGroup().id), '-search')]",
-        "openaiApiVersion": "2023-06-01-preview",
+        "openaiApiVersion": "2023-12-01-preview",
         "storageContainerNameBlobDocuments": "blob-documents",
         "storageContainerNameBlobChunks": "blob-chunks",
         "textChunkerPageLength": 2000,
