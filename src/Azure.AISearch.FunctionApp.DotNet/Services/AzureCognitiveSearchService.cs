@@ -11,6 +11,7 @@ public class AzureCognitiveSearchService
     public AzureCognitiveSearchService(IConfiguration configuration)
     {
         var settings = configuration.Get<AppSettings>();
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(settings.SearchServiceUrl);
         ArgumentNullException.ThrowIfNull(settings.SearchServiceAdminKey);
         ArgumentNullException.ThrowIfNull(settings.SearchIndexNameBlobChunks);

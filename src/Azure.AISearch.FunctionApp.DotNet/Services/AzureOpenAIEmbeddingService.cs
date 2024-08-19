@@ -10,6 +10,7 @@ public class AzureOpenAIEmbeddingService
     public AzureOpenAIEmbeddingService(IConfiguration configuration)
     {
         var settings = configuration.Get<AppSettings>();
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(settings.OpenAIEndpoint);
         ArgumentNullException.ThrowIfNull(settings.OpenAIApiKey);
         this.openAIClient = new OpenAIClient(new Uri(settings.OpenAIEndpoint), new AzureKeyCredential(settings.OpenAIApiKey));

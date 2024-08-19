@@ -1,18 +1,18 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Azure.AISearch.FunctionApp.Models;
 
 public class SkillResponseRecord
 {
-    [JsonProperty("recordId")]
+    [JsonPropertyName("recordId")]
     public string? RecordId { get; set; }
 
-    [JsonProperty("data")]
+    [JsonPropertyName("data")]
     public SkillResponseRecordData Data { get; set; } = new SkillResponseRecordData();
 
-    [JsonProperty("errors")]
+    [JsonPropertyName("errors")]
     public IList<SkillResponseMessage> Errors { get; set; } = new List<SkillResponseMessage>();
 
-    [JsonProperty("warnings")]
+    [JsonPropertyName("warnings")]
     public IList<SkillResponseMessage> Warnings { get; set; } = new List<SkillResponseMessage>();
 }

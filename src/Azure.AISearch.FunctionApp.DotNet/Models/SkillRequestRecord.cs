@@ -1,12 +1,12 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Azure.AISearch.FunctionApp.Models;
 
 public class SkillRequestRecord
 {
-    [JsonProperty("recordId")]
+    [JsonPropertyName("recordId")]
     public string? RecordId { get; set; }
 
-    [JsonProperty("data")]
+    [JsonPropertyName("data")]
     public SkillRequestRecordData Data { get; set; } = new SkillRequestRecordData();
 }

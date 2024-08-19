@@ -1,9 +1,9 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Azure.AISearch.FunctionApp.Models;
 
 public class SkillResponseMessage
 {
-    [JsonProperty("message")]
+    [JsonPropertyName("message")]
     public string? Message { get; set; }
 }

@@ -268,7 +268,7 @@
                         },
                         {
                             "name": "FUNCTIONS_WORKER_RUNTIME",
-                            "value": "dotnet"
+                            "value": "dotnet-isolated"
                         },
                         {
                             "name": "AzureWebJobsFeatureFlags",

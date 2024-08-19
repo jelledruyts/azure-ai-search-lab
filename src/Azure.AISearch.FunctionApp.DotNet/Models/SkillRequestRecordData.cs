@@ -1,33 +1,33 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Azure.AISearch.FunctionApp.Models;
 
 public class SkillRequestRecordData
 {
-    [JsonProperty("document_id")]
+    [JsonPropertyName("document_id")]
     public string? DocumentId { get; set; }
 
-    [JsonProperty("text")]
+    [JsonPropertyName("text")]
     public string? Text { get; set; }
     
-    [JsonProperty("filepath")]
+    [JsonPropertyName("filepath")]
     public string? FilePath { get; set; }
     
-    [JsonProperty("title")]
+    [JsonPropertyName("title")]
     public string? Title { get; set; }
 
-    [JsonProperty("fieldname")]
+    [JsonPropertyName("fieldname")]
     public string? FieldName { get; set; }
 
-    [JsonProperty("num_tokens")]
+    [JsonPropertyName("num_tokens")]
     public decimal? NumTokens { get; set; }
 
-    [JsonProperty("token_overlap")]
+    [JsonPropertyName("token_overlap")]
     public decimal? TokenOverlap { get; set; }
 
-    [JsonProperty("min_chunk_size")]
+    [JsonPropertyName("min_chunk_size")]
     public decimal? MinChunkSize { get; set; }
 
-    [JsonProperty("embedding_deployment_name")]
+    [JsonPropertyName("embedding_deployment_name")]
     public string? EmbeddingDeploymentName { get; set; }
 }
