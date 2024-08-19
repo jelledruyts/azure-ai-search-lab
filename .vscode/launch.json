@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/Azure.AISearch.WebApp/bin/Debug/net6.0/Azure.AISearch.WebApp.dll",
+            "program": "${workspaceFolder}/src/Azure.AISearch.WebApp/bin/Debug/net8.0/Azure.AISearch.WebApp.dll",
             "args": [],
             "cwd": "${workspaceFolder}/src/Azure.AISearch.WebApp",
             "stopAtEntry": false,

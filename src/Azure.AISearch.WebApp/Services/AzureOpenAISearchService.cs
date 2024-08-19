@@ -86,26 +86,16 @@ public class AzureOpenAISearchService : ISearchService
         {
             // Process citations within the answer, which take the form "[doc1][doc2]..." and refer to the (1-based) index of
             // the citations in the tool message.
-            foreach (var extensionMessage in answerMessage.AzureExtensionsContext.Messages.Where(m => m.Role == ChatRole.Tool))
+            var citationIndex = 0;
+            foreach (var citation in answerMessage.AzureExtensionsContext.Citations)
             {
-                Console.WriteLine(extensionMessage.Content);
-                var content = JsonSerializer.Deserialize<ChatResponseMessageContent>(extensionMessage.Content!);
-                if (content?.Citations != null && content.Citations.Any())
+                answerText = answerText.Replace($"[doc{++citationIndex}]", $"<cite>{citation.Title}</cite>", StringComparison.OrdinalIgnoreCase);
+                searchResponse.SearchResults.Add(new SearchResult
                 {
-                    var citationIndex = 0;
-                    foreach (var citation in content.Citations)
-                    {
-                        answerText = answerText.Replace($"[doc{++citationIndex}]", $"<cite>{citation.Title}</cite>", StringComparison.OrdinalIgnoreCase);
-                        searchResponse.SearchResults.Add(new SearchResult
-                        {
-                            DocumentId = citation.Id,
-                            DocumentTitle = citation.Title,
-                            Captions = string.IsNullOrWhiteSpace(citation.Content) ? Array.Empty<string>() : new[] { citation.Content }
-                        });
-                    }
-                    // Stop looping through the tool messages once we find the first one holding the citations.
-                    break;
-                }
+                    DocumentId = citation.Filepath,
+                    DocumentTitle = citation.Title,
+                    Captions = string.IsNullOrWhiteSpace(citation.Content) ? Array.Empty<string>() : new[] { citation.Content }
+                });
             }
         }
 
@@ -114,19 +104,19 @@ public class AzureOpenAISearchService : ISearchService
         return searchResponse;
     }
 
-    private AzureCognitiveSearchChatExtensionConfiguration GetAzureCognitiveSearchDataSource(SearchRequest request)
+    private AzureSearchChatExtensionConfiguration GetAzureCognitiveSearchDataSource(SearchRequest request)
     {
         ArgumentNullException.ThrowIfNull(this.settings.SearchServiceUrl);
         ArgumentNullException.ThrowIfNull(this.settings.SearchServiceAdminKey);
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIEndpoint);
         ArgumentNullException.ThrowIfNull(this.settings.OpenAIApiKey);
         var useDocumentsIndex = request.SearchIndex == SearchIndexType.Documents;
-        return new AzureCognitiveSearchChatExtensionConfiguration
+        return new AzureSearchChatExtensionConfiguration
         {
             SearchEndpoint = new Uri(this.settings.SearchServiceUrl),
-            Key = this.settings.SearchServiceAdminKey,
+            Authentication = new OnYourDataApiKeyAuthenticationOptions(this.settings.SearchServiceAdminKey),
             IndexName = useDocumentsIndex ? this.settings.SearchIndexNameBlobDocuments : this.settings.SearchIndexNameBlobChunks,
-            FieldMappingOptions = new AzureCognitiveSearchIndexFieldMappingOptions
+            FieldMappingOptions = new AzureSearchIndexFieldMappingOptions
             {
                 ContentFieldNames = { useDocumentsIndex ? nameof(Document.Content) : nameof(DocumentChunk.Content) },
                 TitleFieldName = useDocumentsIndex ? nameof(Document.Title) : nameof(DocumentChunk.SourceDocumentTitle),
@@ -140,78 +130,35 @@ public class AzureOpenAISearchService : ISearchService
             Strictness = request.Strictness ?? Constants.Defaults.Strictness,
             DocumentCount = request.DocumentCount ?? Constants.Defaults.DocumentCount,
             SemanticConfiguration = request.IsSemanticSearch ? Constants.ConfigurationNames.SemanticConfigurationNameDefault : null,
-            EmbeddingEndpoint = request.IsVectorSearch ? new Uri(new Uri(this.settings.OpenAIEndpoint), $"openai/deployments/{this.settings.OpenAIEmbeddingDeployment}/embeddings?api-version={this.settings.OpenAIApiVersion}") : null,
-            EmbeddingKey = request.IsVectorSearch ? this.settings.OpenAIApiKey : null
+            VectorizationSource = request.IsVectorSearch ? new OnYourDataDeploymentNameVectorizationSource(this.settings.OpenAIEmbeddingDeployment) : null
         };
     }
 
-    private AzureCognitiveSearchQueryType GetQueryType(SearchRequest request)
+    private AzureSearchQueryType GetQueryType(SearchRequest request)
     {
         if (request.QueryType == QueryType.TextStandard)
         {
-            return AzureCognitiveSearchQueryType.Simple;
+            return AzureSearchQueryType.Simple;
         }
         else if (request.QueryType == QueryType.TextSemantic)
         {
-            return AzureCognitiveSearchQueryType.Semantic;
+            return AzureSearchQueryType.Semantic;
         }
         else if (request.QueryType == QueryType.Vector)
         {
-            return AzureCognitiveSearchQueryType.Vector;
+            return AzureSearchQueryType.Vector;
         }
         else if (request.QueryType == QueryType.HybridStandard)
         {
-            return AzureCognitiveSearchQueryType.VectorSimpleHybrid;
+            return AzureSearchQueryType.VectorSimpleHybrid;
         }
         else if (request.QueryType == QueryType.HybridSemantic)
         {
-            return AzureCognitiveSearchQueryType.VectorSemanticHybrid;
+            return AzureSearchQueryType.VectorSemanticHybrid;
         }
         else
         {
             throw new NotSupportedException($"Unsupported query type \"{request.QueryType}\".");
         }
-    }
-
-    // These model classes are based on the Azure OpenAI playground and samples
-    // to use while waiting for .NET SDK support.
-
-    private class ChatResponseMessageContent
-    {
-        [JsonPropertyName("citations")]
-        public IList<Citation> Citations { get; set; } = new List<Citation>();
-
-        [JsonPropertyName("intent")]
-        public string? Intent { get; set; } // This seems to be yet another nested JSON object, as an array of strings
-    }
-
-    private class Citation
-    {
-        [JsonPropertyName("content")]
-        public string? Content { get; set; }
-
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-
-        [JsonPropertyName("title")]
-        public string? Title { get; set; }
-
-        [JsonPropertyName("filepath")]
-        public string? Filepath { get; set; }
-
-        [JsonPropertyName("url")]
-        public string? Url { get; set; }
-
-        [JsonPropertyName("metadata")]
-        public CitationMetadata Metadata { get; set; } = new CitationMetadata();
-
-        [JsonPropertyName("chunk_id")]
-        public string? ChunkId { get; set; }
-    }
-
-    private class CitationMetadata
-    {
-        [JsonPropertyName("chunking")]
-        public string? Chunking { get; set; }
     }
 }
